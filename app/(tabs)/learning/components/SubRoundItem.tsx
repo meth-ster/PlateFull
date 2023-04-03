@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   connectionLine: {
     position: 'absolute',
     top: -35,
-    width: 8,
+    // width: 8,
     height: 35,
     backgroundColor: '#e5e7eb',
     borderRadius: 4,

@@ -2,22 +2,23 @@ import HeaderProfile from '@/components/common/HeaderProfile';
 import { useMealStore } from '@/stores/mealStore';
 import { useUserStore } from '@/stores/userStore';
 import { Ionicons } from '@expo/vector-icons';
+import { format, parseISO } from "date-fns";
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Platform,
-    ScrollView,
-    Share,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring
 } from 'react-native-reanimated';
 import { colors } from '../../../constants/colors';
 import { getAvatarSource } from '../../../utils/avatarUtils';
@@ -302,7 +303,7 @@ const FoodReportScreen = () => {
       <ReportSection title="Recent Meal History">
         {dummyMealHistory.map((day: any, index: number) => (
           <View key={day._id || index} style={styles.historyDayCard}>
-            <Text style={styles.historyDate}>{day.date}</Text>
+            <Text style={styles.historyDate}>{format(parseISO(day.date), "yyyy-MM-dd")}</Text>
             <View style={styles.mealCard}>
               <View style={styles.mealHeader}>
                 <Text style={styles.mealType}>Breakfast</Text>
