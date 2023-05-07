@@ -49,13 +49,7 @@ const HomeScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#F57C00" />
-      <HeaderProfile
-        name={userData.name}
-        avatar={userData.avatar}
-        isPremium={true}
-        showChargeIcon={true}
-      />
-
+      <HeaderProfile/>
       <View style={styles.contentContainer}>
         <Text style={styles.welcomeMessage}>Welcome how are we doing today?</Text>
 
