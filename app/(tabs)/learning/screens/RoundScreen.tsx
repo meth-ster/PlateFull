@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Dimensions,
   Image,
   Modal,
@@ -17,6 +16,7 @@ import Animated, {
   SlideInRight,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withSequence,
   withSpring,
   withTiming,
@@ -24,11 +24,18 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors } from '../../../../constants/colors';
 import { useQuest } from '../context/QuestContext';
+import { QuestProgressManager } from '../data/questProgress';
 import GameScreen from '../quests/GameScreen';
 import ResultsScreen from '../quests/ResultsScreen';
 import { Round, SubRound } from '../types/navigation';
 
 const { width } = Dimensions.get('window');
+const SUB_ROUNDS_PER_ROUND = 5; // Duolingo-like path: 5 sub-rounds + treasure box
+
+const getHeaderColor = (roundNumber: number): string => {
+  // Alternate colors similar to Duolingo sections
+  return roundNumber % 2 === 1 ? '#58cc02' : '#a262ff';
+};
 
 interface RoundScreenProps {
   difficulty: 'EASY' | 'NORMAL' | 'HARD';
@@ -53,6 +60,7 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
     starsEarned: number;
   } | null>(null);
   const [currentVisibleRound, setCurrentVisibleRound] = useState<number>(1);
+  const [showRoundsList, setShowRoundsList] = useState<boolean>(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const roundPositions = useRef<{ [key: number]: number }>({});
 
@@ -60,13 +68,27 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
   const boxOpenAnimation = useSharedValue(0);
   const starsAnimation = useSharedValue(0);
   const badgeAnimation = useSharedValue(0);
+  const startBubbleAnimation = useSharedValue(0);
+
+  useEffect(() => {
+    // Gentle up-down floating animation for the START cap
+    startBubbleAnimation.value = withRepeat(
+      withSequence(
+        withTiming(-6, { duration: 900 }),
+        withTiming(0, { duration: 900 })
+      ),
+      -1,
+      true
+    );
+  }, []);
 
   const handleSubRoundPress = (levelIndex: number, roundIndex: number, subRoundIndex: number) => {
     if (!questProgress) return;
     
     const subRound = questProgress.levels[levelIndex]?.rounds[roundIndex]?.subRounds[subRoundIndex];
     if (!subRound || subRound.isLocked) {
-      Alert.alert('Locked', 'Complete previous quests to unlock this one!');
+      setLockedModalInfo({ title: 'Locked', message: 'Complete previous quests to unlock this one!' });
+      setShowLockedModal(true);
       return;
     }
 
@@ -86,11 +108,14 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
     const round = questProgress.levels[levelIndex]?.rounds[roundIndex];
     if (!round) return;
 
-    const allSubRoundsCompleted = round.subRounds.slice(0, 4).every(sr => sr.isCompleted);
+    const allSubRoundsCompleted = round.subRounds
+      .slice(0, SUB_ROUNDS_PER_ROUND)
+      .every(sr => sr.isCompleted);
 
     if (!allSubRoundsCompleted) {
       const completedSubRounds = round.subRounds.slice(0, 4).filter(sr => sr.isCompleted).length;
-      Alert.alert('Treasure Locked', `Complete all 4 sub-rounds to unlock this treasure box!\nProgress: ${completedSubRounds}/4`);
+      setLockedModalInfo({ title: 'Treasure Locked', message: `Complete all 4 sub-rounds to unlock this treasure box!\nProgress: ${completedSubRounds}/4` });
+      setShowLockedModal(true);
       return;
     }
 
@@ -196,12 +221,16 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
     const isCompleted = subRound.isCompleted;
     const isLocked = subRound.isLocked;
     const isCurrent = !isCompleted && !isLocked;
+    const offsetStyle = subRoundIndex % 2 === 0 ? styles.offsetRight : styles.offsetLeft;
+    const animatedStartLabelStyle = useAnimatedStyle(() => ({
+      transform: [{ translateY: startBubbleAnimation.value }]
+    }));
     
     return (
       <Animated.View
         key={subRound.id}
         entering={FadeInDown.delay(subRoundIndex * 100).springify()}
-        style={styles.pathNodeContainer}
+        style={[styles.pathNodeContainer, offsetStyle]}
       >
         {!isFirst && (
           <View style={[
@@ -211,7 +240,7 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
         )}
         
         {isFirst && isCurrent && (
-          <Animated.View entering={FadeInUp.delay(200)} style={styles.startLabel}>
+          <Animated.View entering={FadeInUp.delay(200)} style={[styles.startLabel, animatedStartLabelStyle]}>
             <Text style={styles.startText}>START</Text>
           </Animated.View>
         )}
@@ -222,6 +251,8 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
           style={styles.subRoundButton}
           activeOpacity={0.8}
         >
+          {/* Progress ring for active sub-round */}
+          {isCurrent && <View style={styles.progressRing} />}
           <Image
             source={
               isCompleted 
@@ -255,7 +286,9 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
 
   const renderTreasureBox = (round: Round, levelIndex: number, roundIndex: number) => {
     const isCompleted = round.isCompleted;
-    const allSubRoundsCompleted = round.subRounds.slice(0, 4).every(sr => sr.isCompleted);
+    const allSubRoundsCompleted = round.subRounds
+      .slice(0, SUB_ROUNDS_PER_ROUND)
+      .every(sr => sr.isCompleted);
     const isUnlocked = allSubRoundsCompleted;
     
     return (
@@ -305,7 +338,11 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
   };
 
   const renderRound = (round: Round, levelIndex: number, roundIndex: number) => {
-    const completedSubRounds = round.subRounds.slice(0, 4).filter(sr => sr.isCompleted).length;
+    const completedSubRounds = round.subRounds
+      .slice(0, SUB_ROUNDS_PER_ROUND)
+      .filter(sr => sr.isCompleted).length;
+    const currentSpot = QuestProgressManager.getCurrentSubRound(questProgress!);
+    const isCurrentRound = currentSpot ? currentSpot.roundIndex === roundIndex : false;
     
     return (
       <Animated.View
@@ -313,30 +350,46 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
         entering={SlideInRight.delay(roundIndex * 50)}
         style={styles.roundContainer}
       >
-        <View style={styles.roundHeader}>
-          <Text style={styles.roundTitle}>{round.name}</Text>
-          <Text style={styles.roundProgress}>
-            {completedSubRounds}/4 sub-rounds + treasure
-          </Text>
-        </View>
-
         <View style={styles.questPathContainer}>
           <View style={styles.questPath}>
-            {round.subRounds.slice(0, 4).map((subRound, subRoundIndex) =>
+            {round.subRounds.slice(0, SUB_ROUNDS_PER_ROUND).map((subRound, subRoundIndex) =>
               renderSubRound(subRound, levelIndex, roundIndex, subRoundIndex, subRoundIndex === 0)
             )}
             {renderTreasureBox(round, levelIndex, roundIndex)}
           </View>
-{/* 
-          <Animated.View 
-            entering={SlideInRight.delay(600).springify()}
-            style={styles.characterContainer}
-          >
-            <Image
-              source={require('../../../../assets/images/characters/zicon (26).png')}
-              style={styles.characterMascot}
-            />
-          </Animated.View> */}
+          
+          {/* Round Info Panel - Right Side */}
+          <View style={styles.roundInfoPanel}>
+            <View style={styles.roundInfoHeader}>
+              <Text style={styles.roundInfoTitle}>{round.name}</Text>
+              <Text style={styles.roundInfoProgress}>
+                {completedSubRounds}/{SUB_ROUNDS_PER_ROUND}
+              </Text>
+            </View>
+            
+            {/* Round Separator with Dashed Line */}
+            {/* {roundIndex < level.rounds.length - 1 && (
+              <Animated.View entering={FadeInDown.delay(800).springify()} style={styles.roundSeparator}>
+                <View style={styles.separatorContainer}>
+                  <View style={styles.dashedLine} />
+                  <View style={styles.separatorContent}>
+                    <Text style={styles.nextRoundTitle}>Round {roundIndex + 2}</Text>
+                    <Text style={styles.nextRoundProgress}>0/{SUB_ROUNDS_PER_ROUND}</Text>
+                    {isCurrentRound && (
+                      <View style={styles.jumpHereContainer}>
+                        <View style={styles.jumpHereCap}>
+                          <Text style={styles.jumpHereText}>JUMP HERE?</Text>
+                        </View>
+                        <TouchableOpacity style={styles.jumpHereButton}>
+                          <Ionicons name="play" size={20} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </Animated.View>
+            )} */}
+          </View>
         </View>
       </Animated.View>
     );
@@ -434,6 +487,32 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
     </Modal>
   );
 
+  // Locked modal shown when tapping a locked sub-round or box
+  const [showLockedModal, setShowLockedModal] = useState<boolean>(false);
+  const [lockedModalInfo, setLockedModalInfo] = useState<{ title: string; message: string } | null>(null);
+
+  const LockedModal = () => (
+    <Modal
+      visible={showLockedModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowLockedModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <Animated.View entering={ZoomIn} style={styles.lockedModal}>
+          <TouchableOpacity style={styles.closeModalButton} onPress={() => setShowLockedModal(false)}>
+            <Ionicons name="close" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.lockedTitle}>{lockedModalInfo?.title || 'Locked'}</Text>
+          <Text style={styles.lockedModalMessage}>{lockedModalInfo?.message || 'Complete previous quests to unlock this!'}</Text>
+          <View style={styles.lockedBadge}>
+            <Text style={styles.lockedBadgeText}>LOCKED</Text>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+
   if (isLoading || !questProgress) {
     return (
       <View style={styles.loadingContainer}>
@@ -455,14 +534,7 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        ref={scrollViewRef}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      >
-        <Animated.View entering={FadeInDown} style={styles.header}>
+        <Animated.View entering={FadeInDown} style={[styles.header, { backgroundColor: getHeaderColor(currentVisibleRound) }]}>
           <View style={styles.headerTop}>
             <TouchableOpacity 
               style={styles.backButton}
@@ -475,9 +547,17 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
                  ROUND {currentVisibleRound}
               </Text>
               <Text style={styles.headerTitle}>
-                {level?.name || difficulty}
+                {(level?.name || difficulty) + ' Rounds'}
               </Text>
             </View>
+            {/* <TouchableOpacity
+              style={styles.guidebookButton}
+              onPress={() => setShowRoundsList(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="book" size={16} color={getHeaderColor(currentVisibleRound) === '#58cc02' ? '#2d5301' : '#3d1f66'} />
+              <Text style={styles.guidebookText}>GUIDEBOOK</Text>
+            </TouchableOpacity> */}
           </View>
           
           <View style={styles.totalStats}>
@@ -492,6 +572,14 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
           </View>
         </View>
         </Animated.View>
+       <ScrollView
+        ref={scrollViewRef}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+       
 
         {/* Level Header */}
         {/* {renderLevelHeader(level, levelIndex)} */}
@@ -509,6 +597,57 @@ const RoundScreen: React.FC<RoundScreenProps> = ({ difficulty, onBack, onStartQu
       </ScrollView>
 
       <RewardModal />
+      <LockedModal />
+
+      {/* Rounds list modal */}
+      <Modal
+        visible={showRoundsList}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowRoundsList(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View style={styles.roundsListModal} entering={ZoomIn}>
+            <View style={styles.roundsListHeader}>
+              <Text style={styles.roundsListTitle}>All Rounds</Text>
+              <TouchableOpacity onPress={() => setShowRoundsList(false)}>
+                <Ionicons name="close" size={22} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 400 }}>
+              {level.rounds.map((r, idx) => {
+                const completed = r.isCompleted;
+                const unlocked = !r.isLocked;
+                return (
+                  <TouchableOpacity
+                    key={r.id}
+                    style={styles.roundsListItem}
+                    disabled={!unlocked}
+                    onPress={() => {
+                      setShowRoundsList(false);
+                      const y = roundPositions.current[idx] ?? 0;
+                      scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 160), animated: true });
+                    }}
+                  >
+                    <Text style={[styles.roundsListItemText, !unlocked && { opacity: 0.5 }]}>
+                      Round {idx + 1}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {completed ? (
+                        <Ionicons name="checkmark-circle" size={20} color="#58cc02" />
+                      ) : unlocked ? (
+                        <Ionicons name="ellipse-outline" size={18} color={colors.text.secondary} />
+                      ) : (
+                        <Ionicons name="lock-closed" size={18} color={colors.text.secondary} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
       
       {/* Game Screen Modal */}
       <Modal
@@ -604,15 +743,14 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: 0,
   },
   header: {
-    padding: 20,
+    padding: 10,
     alignItems: 'center',
     backgroundColor: '#58cc02',
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-    marginBottom: 20,
+    borderRadius: 25,
+    marginBottom: 5,
     shadowColor: '#58cc02',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -620,14 +758,15 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   headerTop: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   backButton: {
     position: 'absolute',
-    top: 0,
+    top: 15,
     left: 0,
     right: 0,
     zIndex: 1000,
@@ -637,6 +776,23 @@ const styles = StyleSheet.create({
   headerContent: {
     flex: 1,
     alignItems: 'center',
+  },
+  guidebookButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'white',
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  guidebookText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#2d5301',
   },
   sectionTitle: {
     fontSize: 12,
@@ -655,7 +811,7 @@ const styles = StyleSheet.create({
   },
   totalStats: {
     flexDirection: 'row',
-    gap: 25,
+    gap: 5,
     paddingHorizontal: 20,
   },
   statItem: {
@@ -738,31 +894,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   roundWrapper: {
-    marginBottom: 25,
-    paddingHorizontal: 20,
+    marginBottom: 10,
   },
   roundContainer: {
     width: '100%',
-    padding: 25,
+    padding: 10,
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    
   },
   roundHeader: {
-    alignItems: 'center',
-    marginBottom: 30,
+    alignItems: 'flex-end',
+    marginBottom: 10,
   },
   roundTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text.primary,
-    marginBottom: 5,
+    marginBottom: 0,
   },
   roundProgress: {
     fontSize: 14,
@@ -771,16 +919,44 @@ const styles = StyleSheet.create({
   questPathContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    gap: 20,
   },
   questPath: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 20,
   },
+  roundInfoPanel: {
+    width: 120,
+    alignItems: 'flex-start',
+    paddingTop: 20,
+  },
+  roundInfoHeader: {
+    alignItems: 'flex-start',
+    marginBottom: 15,
+  },
+  roundInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  roundInfoProgress: {
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
   pathNodeContainer: {
     alignItems: 'center',
-    marginBottom: 35,
+    marginBottom: 40,
     position: 'relative',
+  },
+  offsetRight: {
+    alignSelf: 'flex-end',
+    right: 40,
+  },
+  offsetLeft: {
+    alignSelf: 'flex-start',
+    left: 40,
   },
   connectionLine: {
     position: 'absolute',
@@ -795,19 +971,19 @@ const styles = StyleSheet.create({
   },
   startLabel: {
     backgroundColor: '#58cc02',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 25,
-    marginBottom: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 12,
     shadowColor: '#58cc02',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   startText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -815,6 +991,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  progressRing: {
+    position: 'absolute',
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    borderWidth: 6,
+    borderColor: '#58cc02',
+    opacity: 0.9,
   },
   subRoundImage: {
     width: 80,
@@ -926,6 +1111,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  roundsListModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    width: width - 60,
+  },
+  roundsListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  roundsListTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  roundsListItem: {
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  roundsListItemText: {
+    fontSize: 16,
+    color: colors.text.primary,
+  },
   rewardModal: {
     backgroundColor: 'white',
     borderRadius: 20,
@@ -980,6 +1194,97 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 10,
     zIndex: 1000,
+  },
+  // Round separator styles - Duolingo-style with dashed line
+  roundSeparator: {
+    alignItems: 'flex-start',
+    marginTop: 20,
+    marginBottom: 0,
+  },
+  separatorContainer: {
+    width: '100%',
+    alignItems: 'flex-start',
+  },
+  dashedLine: {
+    width: '100%',
+    height: 1,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    marginBottom: 15,
+  },
+  separatorContent: {
+    alignItems: 'flex-start',
+  },
+  nextRoundTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  nextRoundProgress: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginBottom: 12,
+  },
+  jumpHereContainer: {
+    alignItems: 'flex-start',
+  },
+  jumpHereCap: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  jumpHereText: {
+    color: '#6b7280',
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  jumpHereButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#8b5cf6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  lockedModal: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 26,
+    width: width - 60,
+    alignItems: 'center',
+  },
+  lockedTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: 8,
+  },
+  lockedModalMessage: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  lockedBadge: {
+    backgroundColor: '#eee',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  lockedBadgeText: {
+    color: '#888',
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 });
 

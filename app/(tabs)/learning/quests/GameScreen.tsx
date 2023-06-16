@@ -1,10 +1,13 @@
 // src/screens/GameScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as Speech from 'expo-speech';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Animated,
   Dimensions,
+  Image,
+  Platform,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -19,6 +22,18 @@ import { RootStackParamList } from '../types/navigation';
 type GameScreenProps = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Category image mapping
+const CATEGORY_IMAGES = {
+  'Fruits': require('../../../../assets/images/foods/fruits.png'),
+  'Vegetables': require('../../../../assets/images/foods/broccoli.png'),
+  'Proteins': require('../../../../assets/images/foods/chicken.png'),
+  'Grains': require('../../../../assets/images/foods/rice.png'),
+  'Dairy': require('../../../../assets/images/foods/milk.png'),
+  'Nuts': require('../../../../assets/images/foods/nuts.png'),
+  'General Knowledge': require('../../../../assets/images/foods/meal.png'),
+  'default': require('../../../../assets/images/foods/meal.png'),
+};
 
 const GameScreen = ({ navigation, route }: GameScreenProps) => {
   const { difficulty, questions: subRoundQuestions } = route.params;
@@ -35,6 +50,34 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
   const [hintText, setHintText] = useState('');
   const [fadeAnim] = useState(new Animated.Value(1));
   const [shakeAnim] = useState(new Animated.Value(0));
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [currentSpeakingText, setCurrentSpeakingText] = useState('');
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+
+  // TTS Configuration for children
+  const ttsOptions = {
+    language: 'en-US',
+    pitch: 1.1, // Slightly higher pitch for children
+    rate: 0.75, // Slower rate for better comprehension
+    voice: 'com.apple.ttsbundle.Samantha-compact', // Child-friendly voice on iOS
+  };
+
+  // Fallback TTS options for different platforms
+  const getTTSOptions = () => {
+    // Try to use platform-specific voices
+    if (Platform.OS === 'ios') {
+      return {
+        ...ttsOptions,
+        voice: 'com.apple.ttsbundle.Samantha-compact',
+      };
+    } else if (Platform.OS === 'android') {
+      return {
+        ...ttsOptions,
+        voice: 'en-us-x-sfg#female_1-local', // Android female voice
+      };
+    }
+    return ttsOptions;
+  };
 
   // Process questions based on difficulty
   const processQuestions = useCallback(() => {
@@ -70,6 +113,88 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
     setHintUsed(false);
     setHintText('');
   }, [difficulty, processQuestions]);
+
+  // TTS Functions
+  const speakText = async (text: string, isQuestion: boolean = false) => {
+    if (!ttsEnabled) return;
+    
+    if (isSpeaking) {
+      await Speech.stop();
+    }
+    
+    setIsSpeaking(true);
+    setCurrentSpeakingText(text);
+    
+    try {
+      // Add context for questions to make them more engaging for children
+      let speechText = text;
+      if (isQuestion) {
+        speechText = `Question: ${text}`;
+      }
+      
+      await Speech.speak(speechText, getTTSOptions());
+    } catch (error) {
+      console.error('TTS Error:', error);
+      // Fallback: try without voice specification
+      try {
+        await Speech.speak(text, { language: 'en-US', pitch: 1.1, rate: 0.75 });
+      } catch (fallbackError) {
+        console.error('TTS Fallback Error:', fallbackError);
+      }
+    } finally {
+      setIsSpeaking(false);
+      setCurrentSpeakingText('');
+    }
+  };
+
+  const stopSpeaking = async () => {
+    try {
+      await Speech.stop();
+      setIsSpeaking(false);
+      setCurrentSpeakingText('');
+    } catch (error) {
+      console.error('Error stopping speech:', error);
+    }
+  };
+
+  const toggleTTS = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+    }
+    setTtsEnabled(!ttsEnabled);
+  };
+
+  // Auto-read question when it changes
+  useEffect(() => {
+    if (ttsEnabled && questions.length > 0 && questions[currentQuestion]) {
+      const currentQ = questions[currentQuestion];
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        speakText(currentQ.question, true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentQuestion, questions, ttsEnabled]);
+
+  // Cleanup TTS on unmount
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
+
+  // Get category image
+  const getCategoryImage = (category: string) => {
+    const normalizedCategory = category?.toLowerCase();
+    if (normalizedCategory?.includes('fruit')) return CATEGORY_IMAGES['Fruits'];
+    if (normalizedCategory?.includes('vegetable') || normalizedCategory?.includes('veggie')) return CATEGORY_IMAGES['Vegetables'];
+    if (normalizedCategory?.includes('protein') || normalizedCategory?.includes('meat')) return CATEGORY_IMAGES['Proteins'];
+    if (normalizedCategory?.includes('grain') || normalizedCategory?.includes('bread') || normalizedCategory?.includes('rice')) return CATEGORY_IMAGES['Grains'];
+    if (normalizedCategory?.includes('dairy') || normalizedCategory?.includes('milk') || normalizedCategory?.includes('cheese')) return CATEGORY_IMAGES['Dairy'];
+    if (normalizedCategory?.includes('nut')) return CATEGORY_IMAGES['Nuts'];
+    return CATEGORY_IMAGES['default'];
+  };
 
   // Animation for correct/incorrect answers
   const animateFeedback = (isCorrect: boolean) => {
@@ -126,9 +251,20 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
       setCorrectAnswers(prev => prev + 1);
       Vibration.vibrate(100);
       animateFeedback(true);
+      
+      // Speak success message
+      if (ttsEnabled) {
+        speakText("Great job! That's correct!");
+      }
     } else {
       shake();
       Vibration.vibrate([0, 50, 100, 50]);
+      
+      // Speak the correct answer
+      if (ttsEnabled) {
+        const correctAnswer = currentQ.options[currentQ.correct_index];
+        speakText(`The correct answer is: ${correctAnswer}`);
+      }
     }
 
     // Move to next question or end sub-round
@@ -144,7 +280,7 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
         // End of sub-round - calculate final results
         handleSubRoundComplete(isCorrect);
       }
-    }, 1500);
+    }, 3000); // Longer delay to allow TTS to complete
   };
 
   const handleSubRoundComplete = (isLastAnswerCorrect: boolean) => {
@@ -221,6 +357,11 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
     
     const randomHint = hintOptions[Math.floor(Math.random() * hintOptions.length)];
     setHintText(randomHint);
+    
+    // Speak the hint
+    if (ttsEnabled) {
+      speakText(`Hint: ${randomHint}`);
+    }
   };
 
   const seeCorrectAnswer = () => {
@@ -234,6 +375,11 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
     setSelectedAnswer(currentQ.correct_index);
     setShowAnswer(true);
     
+    // Speak the correct answer
+    if (ttsEnabled) {
+      speakText(`The correct answer is: ${currentQ.correct_answer}`);
+    }
+    
     // This doesn't count as a correct answer and automatically moves to next question
     setTimeout(() => {
       if (currentQuestion < questions.length - 1) {
@@ -246,7 +392,21 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
         // End of sub-round
         handleSubRoundComplete(false);
       }
-    }, 2000); // Longer delay to show the answer
+    }, 3000); // Longer delay to allow TTS to complete
+  };
+
+  const handleOptionPress = (optionText: string, index: number) => {
+    // Read the option when pressed (before selecting)
+    if (ttsEnabled) {
+      speakText(`Option ${String.fromCharCode(65 + index)}: ${optionText}`);
+    }
+  };
+
+  const handleQuestionPress = () => {
+    // Re-read the question when pressed
+    if (questions[currentQuestion] && ttsEnabled) {
+      speakText(questions[currentQuestion].question, true);
+    }
   };
 
   const renderQuestion = () => {
@@ -261,6 +421,7 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
     const currentQ = questions[currentQuestion];
     const isAnswered = selectedAnswer !== null;
     const isCorrect = isAnswered && selectedAnswer === currentQ.correct_index;
+    const categoryImage = getCategoryImage(currentQ.category);
 
     return (
       <Animated.View 
@@ -281,24 +442,105 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
             </View>
           </View>
           
-          <View style={styles.progressContainer}>
-            <Text style={styles.progressText}>
-              {currentQuestion + 1}/{questions.length}
-            </Text>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill,
-                  { width: `${((currentQuestion + 1) / questions.length) * 100}%` }
-                ]} 
+          <View style={styles.centerHeaderContainer}>
+            <TouchableOpacity
+              style={styles.ttsToggleButton}
+              onPress={toggleTTS}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name={ttsEnabled ? "volume-high" : "volume-mute"} 
+                size={24} 
+                color={ttsEnabled ? "#4CAF50" : "#FF6B6B"} 
               />
+            </TouchableOpacity>
+            {isSpeaking && (
+              <View style={styles.speakingStatus}>
+                <Text style={styles.speakingStatusText}>Speaking...</Text>
+              </View>
+            )}
+          </View>
+          
+          <View style={styles.rightHeaderContainer}>
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryText}>{currentQ.category || 'General Knowledge'}</Text>
+            </View>
+            
+            <View style={styles.progressContainer}>
+              <Text style={styles.progressText}>
+                {currentQuestion + 1}/{questions.length}
+              </Text>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill,
+                    { width: `${((currentQuestion + 1) / questions.length) * 100}%` }
+                  ]} 
+                />
+              </View>
             </View>
           </View>
         </View>
 
         <View style={styles.questionContent}>
-          <Text style={styles.categoryText}>{currentQ.category || 'General Knowledge'}</Text>
-          <Text style={styles.questionText}>{currentQ.question}</Text>
+          <View style={styles.categoryImageContainer}>
+            <Image 
+              source={categoryImage} 
+              style={styles.categoryImage}
+              resizeMode="contain"
+            />
+          </View>
+          
+          <View style={styles.instructionContainer}>
+            <Text style={styles.instructionText}>
+              👂 Tap the question to hear it again
+            </Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.questionTouchable}
+            onPress={handleQuestionPress}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.questionText}>{currentQ.question}</Text>
+            <View style={styles.questionAudioIndicator}>
+              <Ionicons 
+                name={isSpeaking && currentSpeakingText === currentQ.question ? "volume-high" : "volume-medium"} 
+                size={20} 
+                color={isSpeaking && currentSpeakingText === currentQ.question ? "#4CAF50" : "#666"} 
+              />
+              {isSpeaking && currentSpeakingText === currentQ.question && (
+                <View style={styles.speakingPulse} />
+              )}
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.readQuestionButton}
+            onPress={() => speakText(currentQ.question, true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name={isSpeaking && currentSpeakingText === currentQ.question ? "volume-high" : "volume-medium"} 
+              size={20} 
+              color={isSpeaking && currentSpeakingText === currentQ.question ? "#2E7D32" : "#4CAF50"} 
+            />
+            <Text style={[
+              styles.readButtonText,
+              { color: isSpeaking && currentSpeakingText === currentQ.question ? "#2E7D32" : "#2E7D32" }
+            ]}>
+              {isSpeaking && currentSpeakingText === currentQ.question ? "Reading..." : "Read Question"}
+            </Text>
+            {isSpeaking && currentSpeakingText === currentQ.question && (
+              <View style={styles.questionButtonPulse} />
+            )}
+          </TouchableOpacity>
+          
+          <View style={styles.readButtonsInstruction}>
+            <Text style={styles.readButtonsInstructionText}>
+              🔊 Use the buttons to hear questions and answers
+            </Text>
+          </View>
           
           {hintText ? (
             <View style={styles.hintContainer}>
@@ -309,6 +551,15 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
         </View>
 
         <View style={styles.optionsContainer}>
+          <View style={styles.optionsInstruction}>
+            <Text style={styles.optionsInstructionText}>
+              🎯 Touch an answer to hear it, then tap to select
+            </Text>
+            <Text style={styles.optionsSubInstructionText}>
+              🔊 Use the read buttons to hear answers clearly
+            </Text>
+          </View>
+          
           {currentQ.options.map((option: string, index: number) => {
             const isSelected = selectedAnswer === index;
             const isCorrectOption = index === currentQ.correct_index;
@@ -333,6 +584,7 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
                 key={index}
                 style={[optionStyle, isAnswered && styles.optionAnswered]}
                 onPress={() => handleAnswer(index)}
+                onPressIn={() => handleOptionPress(option, index)}
                 disabled={isAnswered}
                 activeOpacity={0.7}
               >
@@ -343,8 +595,32 @@ const GameScreen = ({ navigation, route }: GameScreenProps) => {
                   {isAnswered && isSelected && !isCorrect && (
                     <Ionicons name="close" size={20} color="#F44336" />
                   )}
+                  {!isAnswered && (
+                    <Text style={styles.optionLetter}>
+                      {String.fromCharCode(65 + index)} {/* A, B, C, D */}
+                    </Text>
+                  )}
                 </View>
                 <Text style={optionTextStyle}>{option}</Text>
+                <View style={styles.optionAudioIndicator}>
+                  <Ionicons name="volume-low" size={16} color="#999" />
+                </View>
+                
+                <TouchableOpacity
+                  style={styles.readAnswerButton}
+                  onPress={() => speakText(`Option ${String.fromCharCode(65 + index)}: ${option}`)}
+                  activeOpacity={0.7}
+                  disabled={isAnswered}
+                >
+                  <Ionicons 
+                    name={isSpeaking && currentSpeakingText === `Option ${String.fromCharCode(65 + index)}: ${option}` ? "volume-high" : "volume-medium"} 
+                    size={16} 
+                    color={isAnswered ? "#CCC" : (isSpeaking && currentSpeakingText === `Option ${String.fromCharCode(65 + index)}: ${option}` ? "#2E7D32" : "#4CAF50")} 
+                  />
+                  {isSpeaking && currentSpeakingText === `Option ${String.fromCharCode(65 + index)}: ${option}` && (
+                    <View style={styles.answerSpeakingPulse} />
+                  )}
+                </TouchableOpacity>
               </TouchableOpacity>
             );
           })}
@@ -412,7 +688,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
@@ -432,6 +708,52 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333333',
+  },
+  centerHeaderContainer: {
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  ttsToggleButton: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 20,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  speakingStatus: {
+    position: 'absolute',
+    top: -30, // Adjust as needed
+    backgroundColor: '#FFD93D',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#FFD93D',
+  },
+  speakingStatusText: {
+    fontSize: 12,
+    color: '#333333',
+    fontWeight: 'bold',
+  },
+  rightHeaderContainer: {
+    alignItems: 'flex-end',
+    flex: 1,
+  },
+  categoryBadge: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2196F3',
+  },
+  categoryText: {
+    fontSize: 12,
+    color: '#1976D2',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   progressContainer: {
     alignItems: 'flex-end',
@@ -461,14 +783,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 16,
+    alignItems: 'center',
   },
-  categoryText: {
-    fontSize: 16,
-    color: '#666666',
-    marginBottom: 8,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  categoryImageContainer: {
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  categoryImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F5F5F5',
+    padding: 16,
+  },
+  questionTouchable: {
+    alignItems: 'center',
+    position: 'relative',
+    paddingHorizontal: 20,
   },
   questionText: {
     fontSize: 24,
@@ -478,6 +809,24 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 32,
   },
+  questionAudioIndicator: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 15,
+    padding: 8,
+  },
+  speakingPulse: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4CAF50',
+    opacity: 0.7,
+  },
   hintContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -485,6 +834,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginTop: 16,
+    maxWidth: '90%',
   },
   hintText: {
     marginLeft: 8,
@@ -494,6 +844,25 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     marginBottom: 24,
+  },
+  optionsInstruction: {
+    backgroundColor: '#E0F2F7',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  optionsInstructionText: {
+    fontSize: 16,
+    color: '#333333',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  optionsSubInstructionText: {
+    fontSize: 14,
+    color: '#666666',
+    marginTop: 4,
+    textAlign: 'center',
   },
   option: {
     backgroundColor: '#FFFFFF',
@@ -515,6 +884,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333333',
     marginLeft: 12,
+  },
+  optionLetter: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#666666',
   },
   optionIndicator: {
     width: 24,
@@ -543,6 +917,10 @@ const styles = StyleSheet.create({
     color: '#C62828',
     textDecorationLine: 'line-through',
   },
+  optionAudioIndicator: {
+    marginLeft: 8,
+    opacity: 0.6,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -566,6 +944,88 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  instructionContainer: {
+    backgroundColor: '#E0F2F7',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  instructionText: {
+    fontSize: 16,
+    color: '#333333',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  readQuestionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginTop: 16,
+    alignSelf: 'center',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  readButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+  },
+  readAnswerButton: {
+    marginLeft: 12,
+    padding: 8,
+    backgroundColor: '#F0F8F0',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  answerSpeakingPulse: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2E7D32',
+    opacity: 0.7,
+  },
+  questionButtonPulse: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 25,
+    opacity: 0.5,
+  },
+  readButtonsInstruction: {
+    backgroundColor: '#E0F2F7',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  readButtonsInstructionText: {
+    fontSize: 16,
+    color: '#333333',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 
