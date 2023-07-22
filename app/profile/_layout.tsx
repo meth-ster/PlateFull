@@ -23,13 +23,6 @@ export default function ProfileLayout() {
   if (isLoading || !isAuthenticated) {
     return null;
   }
-
-  // If user is not new, redirect to main app (existing users shouldn't be here)
-  if (!isNewUser) {
-    router.replace('/(tabs)' as any);
-    return null;
-  }
-
   return (
     <Stack>
       <Stack.Screen name="child-profile" options={{ headerShown: false }} />

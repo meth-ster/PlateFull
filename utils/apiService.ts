@@ -1,4 +1,11 @@
 import { config } from '../constants/config';
+import { useAuthStore } from '../stores/authStore';
+import { useFoodStore } from '../stores/foodStore';
+import { useGamificationStore } from '../stores/gamificationStore';
+import { useLearningStore } from '../stores/learningStore';
+import { useMealStore } from '../stores/mealStore';
+import { useReportingStore } from '../stores/reportingStore';
+import { useUserStore } from '../stores/userStore';
 import { storage } from './storage';
 
 // API Configuration
@@ -79,6 +86,88 @@ class ApiService {
     }
   }
 
+  // Helper function to store data in appropriate store based on endpoint
+  private storeDataInStore<T>(endpoint: string, data: T): void {
+    try {
+      if (endpoint.startsWith('/auth/')) {
+        // Auth-related data
+        if (endpoint === '/auth/login' || endpoint === '/auth/register') {
+          const authStore = useAuthStore.getState();
+          if (data && typeof data === 'object' && 'user' in data && 'token' in data) {
+            authStore.setUser((data as any).user);
+            authStore.setToken((data as any).token);
+          }
+        } else if (endpoint === '/auth/me') {
+          const userStore = useUserStore.getState();
+          userStore.setProfile(data as any);
+        }
+      } else if (endpoint.startsWith('/users/')) {
+        // User profile data
+        const userStore = useUserStore.getState();
+        if (endpoint === '/users/profile' || endpoint === '/users/avatar') {
+          userStore.setProfile(data as any);
+        }
+      } else if (endpoint.startsWith('/children')) {
+        // Child profile data
+        const userStore = useUserStore.getState();
+        // Update children in user profile
+        if (data && Array.isArray(data) && userStore.profile) {
+          userStore.setProfile({ ...userStore.profile, children: data });
+        }
+      } else if (endpoint.startsWith('/meals')) {
+        // Meal data
+        const mealStore = useMealStore.getState();
+        if (Array.isArray(data)) {
+          mealStore.setMeals(data as any);
+        } else if (data && typeof data === 'object') {
+          // For single meal, we'll just update the meals array
+          // The actual addMeal logic should be handled in the component
+          console.log('Single meal data received:', data);
+        }
+      } else if (endpoint.startsWith('/foods')) {
+        // Food data
+        const foodStore = useFoodStore.getState();
+        if (Array.isArray(data)) {
+          foodStore.setFoods(data as any);
+        }
+      } else if (endpoint.startsWith('/gamification/')) {
+        // Gamification data
+        const gamificationStore = useGamificationStore.getState();
+        if (endpoint.includes('/badges')) {
+          gamificationStore.setBadges(data as any);
+        } else if (endpoint.includes('/progress')) {
+          // Handle progress data - update relevant gamification state
+          if (data && typeof data === 'object') {
+            const progressData = data as any;
+            if (progressData.totalPoints !== undefined) {
+              gamificationStore.setTotalPoints(progressData.totalPoints);
+            }
+            if (progressData.currentStreak !== undefined) {
+              gamificationStore.setCurrentStreak(progressData.currentStreak);
+            }
+            if (progressData.level !== undefined) {
+              gamificationStore.setLevel(progressData.level);
+            }
+          }
+        }
+      } else if (endpoint.startsWith('/reporting')) {
+        // Reporting data
+        const reportingStore = useReportingStore.getState();
+        if (Array.isArray(data)) {
+          reportingStore.setReports(data);
+        }
+      } else if (endpoint.startsWith('/learning')) {
+        // Learning data
+        const learningStore = useLearningStore.getState();
+        if (Array.isArray(data)) {
+          learningStore.setContent(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error storing data in store:', error);
+    }
+  }
+
   // Make HTTP request
   private async request<T>(
     endpoint: string,
@@ -133,6 +222,11 @@ class ApiService {
           data: data
         });
         throw new Error(data.error || data.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Store data in appropriate store if request was successful
+      if (data && response.ok) {
+        this.storeDataInStore(endpoint, data);
       }
 
       return data;
