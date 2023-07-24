@@ -11,8 +11,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import StatusBar from '../../components/common/StatusBar';
 import { colors } from '../../constants/colors';
+import { useAuthStore } from '../../stores/authStore';
 
 const { width } = Dimensions.get('window');
 
@@ -44,13 +44,17 @@ const ChildProfileScreen = () => {
     });
   };
 
+  const { setOnboardingComplete, setNewUser } = useAuthStore();
+  
   const handleNext = () => {
-    router.replace('/(tabs)/index');
+    // Mark onboarding as complete and user as no longer new
+    setOnboardingComplete(true);
+    setNewUser(false);
+    router.replace('/(tabs)' as any);
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar />
       <LinearGradient
         colors={[colors.primary, colors.primaryDark]}
         style={styles.header}
@@ -112,12 +116,8 @@ const ChildProfileScreen = () => {
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.previousText}>Previous</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.nextButton}
-            onPress={handleNext}
-          >
-            <Ionicons name="arrow-forward" size={24} color={colors.text.inverse} />
+          <TouchableOpacity onPress={handleNext}>
+            <Text style={styles.previousText}>Skip</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -273,22 +273,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.primary,
     fontWeight: '600',
-  },
-  nextButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
 });
 
