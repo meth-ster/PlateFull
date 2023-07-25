@@ -1,50 +1,115 @@
-# Welcome to your Expo app 👋
+# PlateFull - Children's Nutrition App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native app built with Expo Router for tracking children's nutrition and making healthy eating fun through gamification.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Child-focused nutrition tracking**
+- **Food identification and logging**
+- **Educational content about nutrition**
+- **Gamification with badges and rewards**
+- **Parent dashboard and insights**
 
-   ```bash
-   npm install
-   ```
+## Tab Bar Visibility Control
 
-2. Start the app
+This app includes flexible tab bar visibility control for different screens:
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+### 1. **Props-based Control**
+```tsx
+// In any parent component
+<TabLayout hideTabBar={true} />
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. **Route-based Auto-hiding**
+The tab bar automatically hides on specific pages defined in `utils/tabBarUtils.ts`:
+- Authentication screens (`/auth/*`)
+- Setup screens (`/profile/setup`)
+- Logging screens (`/meals/logging`)
+- Food selection screens (`/food/selection`)
 
-## Learn more
+### 3. **Screen-level Control**
+For individual screens that need specific tab bar behavior:
 
-To learn more about developing your project with Expo, look at the following resources:
+```tsx
+import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from 'expo-router';
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+const MyScreen = () => {
+  const navigation = useNavigation();
 
-## Join the community
+  useFocusEffect(
+    React.useCallback(() => {
+      // Hide tab bar when screen is focused
+      navigation.setOptions({
+        tabBarStyle: { display: 'none' }
+      });
 
-Join our community of developers creating universal apps.
+      // Restore tab bar when screen loses focus (optional)
+      return () => {
+        navigation.setOptions({
+          tabBarStyle: { height: 60, paddingBottom: 5, paddingTop: 5 }
+        });
+      };
+    }, [navigation])
+  );
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+  // Your component code...
+};
+```
+
+### 4. **Utility Functions**
+```tsx
+import { useTabBarVisibility, getTabBarStyle } from './utils/tabBarUtils';
+
+// Check if current route should hide tab bar
+const { shouldHideTabBar, pathname } = useTabBarVisibility();
+
+// Get appropriate tab bar style
+const tabBarStyle = getTabBarStyle(shouldHideTabBar);
+```
+
+## Getting Started
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
+npx expo start
+```
+
+3. Run on your device:
+- Press `i` for iOS simulator
+- Press `a` for Android emulator
+- Scan QR code with Expo Go app
+
+## Project Structure
+
+```
+plateful/
+├── app/
+│   ├── (tabs)/          # Tab navigation screens
+│   ├── auth/            # Authentication screens
+│   ├── meals/           # Meal tracking screens
+│   ├── profile/         # Profile and setup screens
+│   └── gamification/    # Badges, quests, leaderboard
+├── components/
+│   ├── common/          # Reusable UI components
+│   └── ui/              # Platform-specific components
+├── constants/           # App constants and configuration
+├── utils/               # Helper functions and services
+└── assets/              # Images, fonts, and static assets
+```
+
+## Development Notes
+
+- All critical TypeScript compilation errors have been resolved
+- ESLint configuration is set up for code quality
+- Tab bar visibility is automatically managed based on routes
+- Custom styling supports both iOS and Android platforms
+
+## License
+
+This project is licensed under the MIT License.
