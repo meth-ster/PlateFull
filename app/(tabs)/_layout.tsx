@@ -22,25 +22,29 @@ export default function TabLayout({ hideTabBar = false }: TabLayoutProps) {
     initializeAuth();
   }, [initializeAuth]);
 
+  // Removed duplicate redirect logic - now handled in the combined useEffect below
+
+  // Handle redirects without early returns to avoid hook violations
   useEffect(() => {
-    // Only redirect after a delay to ensure layout is mounted
     if (!isLoading && !isAuthenticated) {
-      const timer = setTimeout(() => {
-        router.replace('/auth/sign-in');
-      }, 500);
-      return () => clearTimeout(timer);
+      router.replace('/auth/sign-in');
+    } else if (!isLoading && isAuthenticated && isNewUser) {
+      router.replace('/profile/child-profile');
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isLoading, isAuthenticated, isNewUser]);
 
-  // Don't render anything while checking auth or redirecting
-  if (isLoading || !isAuthenticated) {
-    return null;
-  }
-
-  // If user is new and hasn't completed onboarding, redirect to child profile setup
-  if (isNewUser) {
-    router.replace('/profile/child-profile');
-    return null;
+  // Show loading or redirect state
+  if (isLoading || !isAuthenticated || isNewUser) {
+    return (
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: colors.primary,
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+        }}>
+        <Tabs.Screen name="index" options={{ title: 'Loading' }} />
+      </Tabs>
+    );
   }
 
   // Dynamic tab bar style based on props and current route
@@ -74,11 +78,7 @@ export default function TabLayout({ hideTabBar = false }: TabLayoutProps) {
       paddingTop: 5,
     };
   };
-
-  const pathname = usePathname();
   const shouldHide = hideTabBar || shouldHideTabBar;
-  
-  console.log('Tab bar visibility check:', { shouldHide, shouldHideTabBar, pathname });
 
   return (
     <Tabs

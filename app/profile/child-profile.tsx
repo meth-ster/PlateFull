@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
   Dimensions,
@@ -24,6 +24,9 @@ interface ChildProfile {
 }
 
 const ChildProfileScreen = () => {
+  const params = useLocalSearchParams();
+  const isFromHeader = params.fromHeader === 'true';
+  
   const [childProfiles, setChildProfiles] = useState<ChildProfile[]>([
     {
       id: '1',
@@ -112,14 +115,16 @@ const ChildProfileScreen = () => {
           </View>
         </ScrollView>
         
-        <View style={styles.footer}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.previousText}>Previous</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleNext}>
-            <Text style={styles.previousText}>Skip</Text>
-          </TouchableOpacity>
-        </View>
+        {!isFromHeader && (
+          <View style={styles.footer}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.previousText}>Previous</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleNext}>
+              <Text style={styles.previousText}>Skip</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
