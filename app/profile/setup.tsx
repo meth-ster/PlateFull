@@ -325,7 +325,8 @@ const ProfileSetupScreen = () => {
       // }
       
       // Navigate to success page
-      router.replace('/profile/setup-success');
+      // router.replace('/profile/setup-success');
+      router.push('/(tabs)' as any);
       
     } catch (error) {
       console.error('Error creating child profile:', error);

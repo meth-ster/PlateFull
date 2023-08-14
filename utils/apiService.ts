@@ -337,13 +337,21 @@ class ApiService {
   }
 
   // Meal methods
-  async getMeals(filters?: any): Promise<ApiResponse<any[]>> {
-    const queryParams = filters ? `?${new URLSearchParams(filters).toString()}` : '';
-    return this.request<any[]>(`/meals${queryParams}`);
+  async getMeals(childId: string): Promise<ApiResponse<any[]>> {
+    return this.request<any>(`/meals/${childId}`, {
+      method: 'GET',
+    });
   }
 
   async addMeal(mealData: any): Promise<ApiResponse<any>> {
     return this.request<any>('/meals', {
+      method: 'POST',
+      body: JSON.stringify(mealData),
+    });
+  }
+
+  async recordMeal(mealData: any): Promise<ApiResponse<any>> {
+    return this.request<any>('/meals/history', {
       method: 'POST',
       body: JSON.stringify(mealData),
     });
