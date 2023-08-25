@@ -23,20 +23,23 @@ import { colors } from '../../constants/colors';
 const { width } = Dimensions.get('window');
 
 interface FormData {
-  fullName: string;
   email: string;
+  password: string;
+  confirmPassword: string;
   phoneNumber: string;
 }
 
 interface FormErrors {
-  fullName?: string;
+  password?: string;
+  confirmPassword?: string;
   email?: string;
   phoneNumber?: string;
 }
 
 const SignUpScreen: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
-    fullName: '',
+    password: '',
+    confirmPassword: '',
     email: '',
     phoneNumber: '',
   });
@@ -46,17 +49,29 @@ const SignUpScreen: React.FC = () => {
   
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    }
-    
+  
+    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
+
+    // Password validation
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    // Confirm password validation
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Confirm password is required';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
     
+    // Phone number validation
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = 'Phone number is required';
     } else if (formData.phoneNumber.length < 10) {
@@ -142,32 +157,48 @@ const SignUpScreen: React.FC = () => {
           </View>
           
           <View style={styles.form}>
-            <Input
-              placeholder="Enter your full name"
-              value={formData.fullName}
-              onChangeText={(text) => updateFormData('fullName', text)}
-              icon={<Ionicons name="person-outline" />}
-            />
-            
+                       
             <Input
               value={formData.email}
               onChangeText={(text) => updateFormData('email', text)}
               placeholder="Enter your email"
               keyboardType="email-address"
               icon={<Ionicons name="mail-outline" />}
+              error={errors.email}
+            />
+
+            <Input
+              value={formData.password}
+              onChangeText={(text) => updateFormData('password', text)}
+              placeholder="Enter your password"
+              keyboardType="default"
+              secureTextEntry={true}
+              icon={<Ionicons name="lock-closed-outline" />}
+              error={errors.password}
+            />
+
+            <Input
+              value={formData.confirmPassword}
+              onChangeText={(text) => updateFormData('confirmPassword', text)}
+              placeholder="Confirm your password"
+              keyboardType="default"
+              secureTextEntry={true}
+              icon={<Ionicons name="lock-closed-outline" />}
+              error={errors.confirmPassword}
             />
             
             <PhoneInput
               value={formData.phoneNumber}
               onChangeText={(text: string) => updateFormData('phoneNumber', text)}
               placeholder="Enter your phone number"
+              error={errors.phoneNumber}
               style={{}}
               containerStyle={{}}
             />
             
             
             <Button
-              title="Sign Up"
+              title="Create Account"
               onPress={handleSignUp}
               loading={loading}
               style={styles.signUpButton}
@@ -175,21 +206,21 @@ const SignUpScreen: React.FC = () => {
             
             <View style={styles.dividerContainer}>
               <View style={styles.divider} />
-              <Text style={styles.dividerText}>Or</Text>
+              <Text style={styles.dividerText}>Or continue with</Text>
               <View style={styles.divider} />
             </View>
             
-            <Button
-              title="Sign up with Google"
+            <TouchableOpacity
+              style={styles.googleButton}
               onPress={handleGoogleSignUp}
-              variant="google"
-              icon={
-                <Image 
-                  source={require('../../assets/images/icons/google.png')}
-                  style={styles.googleIcon}
-                />
-              }
-            />
+              activeOpacity={0.8}
+            >
+              <Image 
+                source={require('../../assets/images/icons/google.png')}
+                style={styles.googleIcon}
+              />
+              <Text style={styles.googleButtonText}>Sign up with Google</Text>
+            </TouchableOpacity>
             
             <View style={styles.footer}>
               <Text style={styles.footerText}>By creating an account, you agree to our Terms of Service and Privacy Policy</Text>
@@ -214,14 +245,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 20,
+    paddingTop: 10,
     paddingBottom: 30,
     alignItems: 'center',
   },
   mascot: {
-    width: 80,
-    height: 80,
+    position: 'absolute',
+    width: 120,
+    height: 120,
     resizeMode: 'contain',
+    marginBottom: -20,
   },
   welcomeText: {
     fontSize: 24,
@@ -248,7 +281,7 @@ const styles = StyleSheet.create({
   },
   formHeader: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   formTitle: {
     fontSize: 28,
@@ -262,10 +295,11 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
+    gap: 6,
   },
   signUpButton: {
-    marginTop: 12,
-    marginBottom: 12,
+    marginTop: 8,
+    marginBottom: 8,
   },
   backToSignInButton: {
     marginTop: 12,
@@ -274,7 +308,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 20,
   },
   divider: {
     flex: 1,
@@ -286,16 +320,34 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginHorizontal: 16,
   },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+  },
   googleIcon: {
     width: 24,
     height: 24,
     resizeMode: 'contain',
+    marginRight: 12,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 24,
   },
   footerText: {
     fontSize: 12,
@@ -312,7 +364,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 20,
   },
   signInText: {
     fontSize: 14,

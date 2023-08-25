@@ -16,13 +16,14 @@ import Animated, {
   FadeOut,
   useAnimatedStyle,
   useSharedValue,
-  withSpring
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
-import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import StatusBar from '../../components/common/StatusBar';
 import { colors } from '../../constants/colors';
 import { config } from '../../constants/config';
+import { shadowPresets } from '../../utils/shadowUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -52,6 +53,134 @@ interface FoodSelectionStepProps extends StepProps {
   type: 'fruits' | 'vegetables' | 'proteins';
   foods: Food[];
 }
+
+// Dropdown Component
+interface DropdownProps {
+  value: string | string[];
+  placeholder: string;
+  options: { label: string; value: string }[];
+  onSelect: (value: string | string[]) => void;
+  multiple?: boolean;
+  maxHeight?: number;
+}
+
+const Dropdown: React.FC<DropdownProps> = ({ 
+  value, 
+  placeholder, 
+  options, 
+  onSelect, 
+  multiple = false,
+  maxHeight = 200 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const animatedHeight = useSharedValue(0);
+  const animatedOpacity = useSharedValue(0);
+
+  const toggleDropdown = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
+      animatedHeight.value = withTiming(maxHeight, { duration: 300 });
+      animatedOpacity.value = withTiming(1, { duration: 200 });
+    } else {
+      animatedHeight.value = withTiming(0, { duration: 300 });
+      animatedOpacity.value = withTiming(0, { duration: 200 });
+    }
+  };
+
+  const handleSelect = (optionValue: string) => {
+    if (multiple) {
+      const currentValues = Array.isArray(value) ? value : [];
+      const newValues = currentValues.includes(optionValue)
+        ? currentValues.filter(v => v !== optionValue)
+        : [...currentValues, optionValue];
+      onSelect(newValues);
+    } else {
+      onSelect(optionValue);
+      setIsOpen(false);
+      animatedHeight.value = withTiming(0, { duration: 300 });
+      animatedOpacity.value = withTiming(0, { duration: 200 });
+    }
+  };
+
+  const getDisplayText = () => {
+    if (multiple) {
+      const values = Array.isArray(value) ? value : [];
+      if (values.length === 0) return placeholder;
+      if (values.length === 1) {
+        const option = options.find(opt => opt.value === values[0]);
+        return option?.label || placeholder;
+      }
+      return `${values.length} selected`;
+    } else {
+      if (!value) return placeholder;
+      const option = options.find(opt => opt.value === value);
+      return option?.label || placeholder;
+    }
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: animatedHeight.value,
+    opacity: animatedOpacity.value,
+  }));
+
+  return (
+    <View style={styles.dropdownContainer}>
+      <TouchableOpacity 
+        style={styles.dropdown}
+        onPress={toggleDropdown}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.dropdownText}>
+          {getDisplayText()}
+        </Text>
+        <Ionicons 
+          name={isOpen ? "chevron-up" : "chevron-down"} 
+          size={24} 
+          color={colors.text.secondary} 
+        />
+      </TouchableOpacity>
+      
+      <Animated.View style={[styles.dropdownOptions, animatedStyle]}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {options.map((option) => {
+            const isSelected = multiple 
+              ? Array.isArray(value) && value.includes(option.value)
+              : value === option.value;
+            
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.dropdownOption,
+                  isSelected && styles.dropdownOptionSelected
+                ]}
+                onPress={() => handleSelect(option.value)}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.dropdownOptionText,
+                  isSelected && styles.dropdownOptionTextSelected
+                ]}>
+                  {option.label}
+                </Text>
+                {isSelected && (
+                  <Ionicons 
+                    name="checkmark" 
+                    size={20} 
+                    color={colors.text.inverse} 
+                  />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </Animated.View>
+    </View>
+  );
+};
 
 // Food data
 const foodData = {
@@ -119,9 +248,9 @@ const ProfileSetupScreen = () => {
       setCurrentStep(currentStep + 1);
       progress.value = withSpring((currentStep + 1) / steps.length);
     } else {
-      // Complete setup
+      // Complete setup and navigate to success page
       if (router && router.replace) {
-        router.replace('/(tabs)');
+        router.replace('/profile/setup-success');
       } else {
         console.error('Router is not available');
       }
@@ -208,23 +337,44 @@ const ProfileSetupScreen = () => {
           </Animated.View>
         </ScrollView>
         
-        <View style={styles.navigationContainer}>
-          {currentStep > 0 && (
-            <TouchableOpacity onPress={handlePrevious} style={styles.previousButton}>
-              <Text style={styles.previousText}>Previous</Text>
-            </TouchableOpacity>
+        <View style={styles.bottomContainer}>
+          {currentStep > 0 ? (
+            // Show both Back and Next buttons
+            <View style={styles.buttonRow}>
+              <Animated.View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={handlePrevious}
+                >
+                  <Text style={styles.backButtonText}>
+                    <Ionicons name="arrow-back" size={25} color="white" />
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+              <Animated.View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.nextButton}
+                  onPress={handleNext}
+                >
+                  <Text style={styles.nextButtonText}>
+                    {currentStep === steps.length - 1 ? "Well!" : <Ionicons name="arrow-forward" size={25} color="white" />}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          ) : (
+            // Show only Next button on first screen
+            <Animated.View>
+              <TouchableOpacity
+                style={styles.singleNextButton}
+                onPress={handleNext}
+              >
+                <Text style={styles.nextButtonText}>
+                  Next
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
           )}
-          
-          <Button
-            title={currentStep === steps.length - 1 ? "Complete Setup" : "Next"}
-            onPress={handleNext}
-            style={styles.nextButton}
-            icon={
-              currentStep < steps.length - 1 ? 
-              <Ionicons name="arrow-forward" size={20} color={colors.text.inverse} /> : 
-              null
-            }
-          />
         </View>
       </View>
     </View>
@@ -252,32 +402,12 @@ const AgeStep: React.FC<StepProps> = ({ profileData, setProfileData }) => (
     <Text style={styles.stepTitle}>Let&apos;s Learn About Your Family!</Text>
     <Text style={styles.stepQuestion}>How old is your child?</Text>
     
-    <TouchableOpacity style={styles.dropdown}>
-      <Text style={styles.dropdownText}>
-        {profileData.age || 'Select Age'}
-      </Text>
-      <Ionicons name="chevron-down" size={24} color={colors.text.secondary} />
-    </TouchableOpacity>
-    
-    <View style={styles.ageOptions}>
-      {config.ageRanges.map((age: { label: string; value: string }) => (
-        <TouchableOpacity
-          key={age.value}
-          style={[
-            styles.ageOption,
-            profileData.age === age.label && styles.ageOptionSelected
-          ]}
-          onPress={() => setProfileData({ ...profileData, age: age.label })}
-        >
-          <Text style={[
-            styles.ageOptionText,
-            profileData.age === age.label && styles.ageOptionTextSelected
-          ]}>
-            {age.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
+    <Dropdown
+      value={profileData.age}
+      placeholder="Select Age"
+      options={config.ageRanges}
+      onSelect={(value) => setProfileData({ ...profileData, age: value as string })}
+    />
   </View>
 );
 
@@ -298,7 +428,6 @@ const GenderStep: React.FC<StepProps> = ({ profileData, setProfileData }) => (
           source={require('../../assets/images/avatars/girl.png')}
           style={styles.genderAvatar}
         />
-        <Text style={styles.genderText}>Girl</Text>
       </TouchableOpacity>
       
       <TouchableOpacity
@@ -312,7 +441,6 @@ const GenderStep: React.FC<StepProps> = ({ profileData, setProfileData }) => (
           source={require('../../assets/images/avatars/boy.png')}
           style={styles.genderAvatar}
         />
-        <Text style={styles.genderText}>Boy</Text>
       </TouchableOpacity>
     </View>
   </View>
@@ -325,43 +453,14 @@ const RestrictionsStep: React.FC<StepProps> = ({ profileData, setProfileData }) 
       Does your child have allergies or dietary restrictions?
     </Text>
     
-    <TouchableOpacity style={styles.dropdown}>
-      <Text style={styles.dropdownText}>
-        {profileData.restrictions.length > 0 
-          ? `${profileData.restrictions.length} selected`
-          : 'Select your Restrictions'
-        }
-      </Text>
-      <Ionicons name="chevron-down" size={24} color={colors.text.secondary} />
-    </TouchableOpacity>
-    
-    <View style={styles.restrictionOptions}>
-      {config.dietaryRestrictions.map((restriction: { label: string; value: string }) => (
-        <TouchableOpacity
-          key={restriction.value}
-          style={[
-            styles.restrictionOption,
-            profileData.restrictions.includes(restriction.value) && 
-            styles.restrictionOptionSelected
-          ]}
-          onPress={() => {
-            const current = profileData.restrictions;
-            const updated = current.includes(restriction.value)
-              ? current.filter((r: string) => r !== restriction.value)
-              : [...current, restriction.value];
-            setProfileData({ ...profileData, restrictions: updated });
-          }}
-        >
-          <Text style={[
-            styles.restrictionOptionText,
-            profileData.restrictions.includes(restriction.value) && 
-            styles.restrictionOptionTextSelected
-          ]}>
-            {restriction.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
+    <Dropdown
+      value={profileData.restrictions}
+      placeholder="Select your Restrictions"
+      options={config.dietaryRestrictions}
+      onSelect={(value) => setProfileData({ ...profileData, restrictions: value as string[] })}
+      multiple={true}
+      maxHeight={250}
+    />
   </View>
 );
 
@@ -381,7 +480,12 @@ const FoodSelectionStep: React.FC<FoodSelectionStepProps> = ({ type, profileData
         What {type.charAt(0).toUpperCase() + type.slice(1)} have been Introduced?
       </Text>
       
-      <View style={styles.foodGrid}>
+      <ScrollView 
+        style={styles.foodGridScrollView}
+        contentContainerStyle={styles.foodGrid}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+      >
         {foods.map((food: Food) => (
           <TouchableOpacity
             key={food.id}
@@ -404,7 +508,7 @@ const FoodSelectionStep: React.FC<FoodSelectionStepProps> = ({ type, profileData
             <Text style={styles.foodName}>{food.name}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -415,15 +519,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 60,
-    paddingBottom: 30,
+    paddingTop: 10,
+    paddingBottom: 50,
     alignItems: 'center',
   },
   mascot: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
     resizeMode: 'contain',
-    marginBottom: 16,
   },
   welcomeText: {
     fontSize: 24,
@@ -487,7 +590,12 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   input: {
-    marginTop: 16,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  dropdownContainer: {
+    position: 'relative',
+    zIndex: 1,
   },
   dropdown: {
     flexDirection: 'row',
@@ -504,24 +612,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text.primary,
   },
-  ageOptions: {
-    marginTop: 16,
+  dropdownOptions: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    overflow: 'hidden',
+    zIndex: 1000,
+    ...shadowPresets.medium,
   },
-  ageOption: {
+  scrollContent: {
+    paddingVertical: 8,
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: colors.surface,
+    marginBottom: 4,
+    marginHorizontal: 8,
   },
-  ageOptionSelected: {
+  dropdownOptionSelected: {
     backgroundColor: colors.primary,
   },
-  ageOptionText: {
+  dropdownOptionText: {
     fontSize: 16,
     color: colors.text.primary,
+    flex: 1,
   },
-  ageOptionTextSelected: {
+  dropdownOptionTextSelected: {
     color: colors.text.inverse,
     fontWeight: '600',
   },
@@ -534,13 +659,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderRadius: 16,
-    borderWidth: 2,
     borderColor: colors.border,
     width: (width - 72) / 2,
   },
   genderOptionSelected: {
     borderColor: colors.primary,
-    backgroundColor: colors.primaryLight + '20',
+    backgroundColor: colors.primary + '20',
   },
   genderAvatar: {
     width: 120,
@@ -553,29 +677,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
   },
-  restrictionOptions: {
-    marginTop: 16,
-  },
-  restrictionOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  restrictionOptionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  restrictionOptionText: {
-    fontSize: 16,
-    color: colors.text.primary,
-  },
-  restrictionOptionTextSelected: {
-    color: colors.text.inverse,
-    fontWeight: '600',
+  foodGridScrollView: {
+    maxHeight: 400,
   },
   foodGrid: {
     flexDirection: 'row',
@@ -586,11 +689,11 @@ const styles = StyleSheet.create({
   foodItem: {
     width: (width - 72) / 3,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   foodImageContainer: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     borderRadius: 16,
     backgroundColor: colors.surface,
     justifyContent: 'center',
@@ -599,7 +702,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   foodImageSelected: {
-    backgroundColor: colors.primaryLight + '30',
+    backgroundColor: colors.primary + '30',
     borderWidth: 2,
     borderColor: colors.primary,
   },
@@ -624,27 +727,69 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
-  navigationContainer: {
+  bottomContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 50,
+    alignItems: 'center',
+  },
+  buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    width: width - 64,
+    gap: 70,
+  },
+  buttonContainer: {
+    flex: 1,
+  },
+  singleNextButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  previousButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  previousText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
+    paddingHorizontal: 32,
+    borderRadius: 25,
+    width: width - 64,
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    ...shadowPresets.medium,
   },
   nextButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 50,
     flex: 1,
-    marginLeft: 16,
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    ...shadowPresets.medium,
+  },
+  nextButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  backButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 50,
+    flex: 1,
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    ...shadowPresets.medium,
+  },
+  backButtonText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 
