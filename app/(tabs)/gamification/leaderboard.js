@@ -1,24 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Animated, {
-    FadeIn,
-    FadeInUp,
-    SlideInRight,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring
+  FadeIn,
+  FadeInUp,
+  SlideInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring
 } from 'react-native-reanimated';
-import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/colors';
+import StatusBar from '../../../components/common/StatusBar';
+import { colors } from '../../../constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -33,7 +33,7 @@ const LeaderboardScreen = ({ navigation }) => {
       name: 'Alena Donin',
       country: '🇫🇷',
       points: '1,469 QP',
-      avatar: require('../../assets/images/avatars/user2.jpg')
+      avatar: require('../../../assets/images/avatars/user2.jpg')
     },
     {
       id: 2,
@@ -41,7 +41,7 @@ const LeaderboardScreen = ({ navigation }) => {
       name: 'Davis Curtis',
       country: '🇺🇸',
       points: '2,569 QP',
-      avatar: require('../../assets/images/avatars/user1.jpg'),
+      avatar: require('../../../assets/images/avatars/user1.jpg'),
       isWinner: true
     },
     {
@@ -50,7 +50,7 @@ const LeaderboardScreen = ({ navigation }) => {
       name: 'Craig Gouse',
       country: '🇨🇦',
       points: '1,053 QP',
-      avatar: require('../../assets/images/avatars/user3.jpg')
+      avatar: require('../../../assets/images/avatars/user3.jpg')
     }
   ];
 
@@ -177,7 +177,7 @@ const LeaderboardScreen = ({ navigation }) => {
         <View style={styles.headerRight}>
           <View style={styles.userProfile}>
             <Image 
-              source={require('../../assets/images/avatars/user.jpg')}
+              source={require('../../../assets/images/avatars/user.jpg')}
               style={styles.headerAvatar}
             />
             <Text style={styles.headerName}>Laurentia Clarissa</Text>

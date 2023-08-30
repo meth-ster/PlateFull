@@ -64,6 +64,7 @@ export const DEV_CONFIG = {
     DEBUG: '/debug/reset',
     PROFILE: '/(tabs)/profile',
     FOOD: '/(tabs)/food',
+    GAMIFICATION: '/gamification',
     MEALS: '/(tabs)/meals',
   },
   

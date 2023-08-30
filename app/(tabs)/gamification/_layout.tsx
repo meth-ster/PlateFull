@@ -4,7 +4,6 @@ export default function GamificationLayout() {
     <Stack>
       <Stack.Screen name="badges" options={{ headerShown: false }} />
       <Stack.Screen name="leaderboard" options={{ headerShown: false }} />
-      <Stack.Screen name="quests" options={{ headerShown: false }} />
     </Stack>
   );
 } 

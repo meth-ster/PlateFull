@@ -1,30 +1,41 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Animated, {
-    FadeInUp
+  FadeInUp
 } from 'react-native-reanimated';
-import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/colors';
+import HeaderProfile from '../../../components/common/HeaderProfile';
+import StatusBar from '../../../components/common/StatusBar';
+import { colors } from '../../../constants/colors';
 
 const { width } = Dimensions.get('window');
 
 const BadgesScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('badge');
-  
+  const [myBadge, setMyBadge] = useState({
+    id: 1,
+    name: 'Bronze',
+    icon: require('../../../assets/images/icons/badge_bronze.svg'),
+    deadline: '25, October 2025',
+    points: 200,
+    remaining: 850,
+    color: '#CD7F32',
+    locked: false
+  });
+
   const badges = [
     {
       id: 1,
       name: 'Bronze',
-      icon: '🥉',
+      icon: require('../../../assets/images/icons/badge_bronze.svg'),
       deadline: '25, October 2025',
       points: 200,
       remaining: 850,
@@ -91,7 +102,58 @@ const BadgesScreen = ({ navigation }) => {
 
   const renderBadgeTab = () => (
     <ScrollView showsVerticalScrollIndicator={false}>
-      {badges.map((badge, index) => (
+        <Animated.View
+          // key={myBadge.id}
+          // entering={FadeInUp.delay(index * 100).springify()}
+        >
+          <TouchableOpacity
+            style={[
+              styles.badgeCard,
+              myBadge.locked && styles.badgeCardLocked
+            ]}
+            activeOpacity={0.8}
+          >
+            {/* {myBadge.hasImage && (
+              <Image 
+                source={require('../../../assets/images/foods/meal.png')}
+                style={styles.badgeImage}
+              />
+            )} */}
+            
+            <View style={styles.badgeContent}>
+              <View style={styles.badgeInfo}>  
+                <View style={styles.badgeDetails}>
+                  <Text style={styles.badgeDeadline}>
+                    Deadline: {myBadge.deadline}
+                  </Text>
+                  <Text style={styles.badgePoints}>
+                    Points: {myBadge.points}
+                  </Text>
+                  {myBadge.remaining && (
+                    <Text style={styles.badgeRemaining}>
+                      Earn: {myBadge.remaining} Remaining to earn this Badge
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.badgeIcon}>
+                  <Image source={myBadge.icon} />
+                  <Text style={[styles.badgeName, { color: myBadge.color }]}>
+                    {myBadge.name}
+                  </Text>
+                </View>
+              </View>
+              
+              {myBadge.locked && (
+                <TouchableOpacity style={styles.lockButton}>
+                  <Ionicons name="lock-closed" size={24} color={colors.text.secondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+      {/* {badges.map((badge, index) => (
         <Animated.View
           key={badge.id}
           entering={FadeInUp.delay(index * 100).springify()}
@@ -105,7 +167,7 @@ const BadgesScreen = ({ navigation }) => {
           >
             {badge.hasImage && (
               <Image 
-                source={require('../../assets/images/foods/meal.png')}
+                source={require('../../../assets/images/foods/meal.png')}
                 style={styles.badgeImage}
               />
             )}
@@ -113,7 +175,7 @@ const BadgesScreen = ({ navigation }) => {
             <View style={styles.badgeContent}>
               <View style={styles.badgeInfo}>
                 <View style={[styles.badgeIcon, { backgroundColor: badge.color + '30' }]}>
-                  <Text style={styles.badgeEmoji}>{badge.icon}</Text>
+                  <Image source={badge.icon}/>
                 </View>
                 
                 <View style={styles.badgeDetails}>
@@ -142,7 +204,7 @@ const BadgesScreen = ({ navigation }) => {
             </View>
           </TouchableOpacity>
         </Animated.View>
-      ))}
+      ))} */}
     </ScrollView>
   );
 
@@ -316,35 +378,9 @@ const BadgesScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar />
-      
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.userInfo}>
-            <Image 
-              source={require('../../assets/images/avatars/user.jpg')}
-              style={styles.userAvatar}
-            />
-            <View>
-              <Text style={styles.userName}>Laurentia Clarissa</Text>
-              <View style={styles.premiumBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={colors.text.inverse} />
-                <Text style={styles.premiumText}>Premium</Text>
-              </View>
-            </View>
-          </View>
-          
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Ionicons name="add-circle" size={20} color={colors.info} />
-              <Text style={styles.statValue}>50</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="star" size={20} color={colors.warning} />
-              <Text style={styles.statValue}>50</Text>
-            </View>
-          </View>
-        </View>
-
+      <HeaderProfile/>
+      <View style={styles.contentContainer}>
         <View style={styles.tabsContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'badge' && styles.tabActive]}
@@ -362,88 +398,39 @@ const BadgesScreen = ({ navigation }) => {
               Stats
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'quests' && styles.tabActive]}
-            onPress={() => navigation.navigate('Quests')}
-          >
-            <Text style={[styles.tabText, activeTab === 'quests' && styles.tabTextActive]}>
-              Quests
-            </Text>
-          </TouchableOpacity>
+        </View>
+        <View style={styles.content}>
+          {activeTab === 'badge' && renderBadgeTab()}
+          {activeTab === 'stats' && renderStatsTab()}
         </View>
       </View>
-
-      <View style={styles.content}>
-        {activeTab === 'badge' && renderBadgeTab()}
-        {activeTab === 'stats' && renderStatsTab()}
-      </View>
+    </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  contentContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
   header: {
     backgroundColor: colors.primary,
-    paddingTop: 60,
     paddingBottom: 16,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 12,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text.inverse,
-  },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  premiumText: {
-    fontSize: 14,
-    color: colors.text.inverse,
-    marginLeft: 4,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    marginLeft: 8,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text.inverse,
-    marginLeft: 4,
   },
   tabsContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap:50,
     paddingHorizontal: 24,
   },
   tab: {
@@ -456,10 +443,15 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.text.grey,
   },
   tabTextActive: {
-    color: colors.text.inverse,
+    color: colors.primary,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+    paddingBottom: 2, // This creates space between text and underline
+    
+    fontSize: 18,
     fontWeight: '600',
   },
   content: {
@@ -495,6 +487,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    borderWidth: 1,
+    borderColor: 'grey',
+    borderRadius: 16,
+    width: width - 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+
   },
   badgeIcon: {
     width: 64,
@@ -503,6 +502,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    flexDirection: 'column',
   },
   badgeEmoji: {
     fontSize: 32,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   badgeName: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },

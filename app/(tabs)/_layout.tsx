@@ -67,7 +67,7 @@ export default function TabLayout({ hideTabBar = false }: TabLayoutProps) {
         }}
       />
       <Tabs.Screen
-        name="food"
+        name="gamification"
         options={{
           title: 'Child\'s Profile',
           tabBarIcon: ({ color }) => (

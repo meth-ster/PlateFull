@@ -48,6 +48,7 @@ export const colors = {
     inverse: '#FFFFFF',
     muted: '#95A5A6',
     disabled: '#BDC3C7',
+    grey: '#687076',
   },
   
   // FIXED: Use string values instead of object  

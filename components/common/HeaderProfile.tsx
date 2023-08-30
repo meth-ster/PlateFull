@@ -1,46 +1,53 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-    Image,
-    ImageSourcePropType,
-    StyleSheet,
-    Text,
-    View
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
-interface HeaderProfileProps {
+interface UserData {
   name: string;
+  childName: string;
   avatar: ImageSourcePropType;
-  isPremium?: boolean;
-  showChargeIcon?: boolean;
+  childAge: string;
+  streak: number;
+  level: number;
+  xp: number;
+  nextLevelXp: number;
 }
 
-const HeaderProfile: React.FC<HeaderProfileProps> = ({
-  name,
-  avatar,
-  isPremium = true,
-  showChargeIcon = true
-}) => {
+const HeaderProfile: React.FC = () => {
+
+  const [userData, setUserData] = useState<UserData>({
+    name: 'Laurentia Claris',
+    childName: 'Emma',
+    avatar: require('../../assets/images/avatars/boy.png'),
+    childAge: '2',
+    streak: 7,
+    level: 3,
+    xp: 1250,
+    nextLevelXp: 2000
+  });
+
   return (
     <View style={styles.headerProfile}>
       <View style={styles.profileInfo}>
         <View style={styles.profileAvatar}>
-          <Image source={avatar} style={styles.avatarImage} />
+          <Image source={userData.avatar} style={styles.avatarImage} />
         </View>
         <View>
-          <Text style={styles.profileName}>{name}</Text>
-          {isPremium && (
+          <Text style={styles.profileName}>{userData.name}</Text>
             <Text style={styles.profileStatus}>
               <Image source={require('../../assets/images/icons/premium.svg')} style={styles.premiumIcon} />
               Premium
             </Text>
-          )}
         </View>
       </View>
-      {showChargeIcon && (
         <View style={styles.chargeIconContainer}>
           <Image source={require('../../assets/images/icons/charge.svg')} style={styles.chargeIcon} />
         </View>
-      )}
     </View>
   );
 };
