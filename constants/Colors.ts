@@ -1,7 +1,48 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+export interface ColorScheme {
+  primary: string;
+  primaryDark: string;
+  primaryLight: string;
+  secondary: string;
+  secondaryDark: string;
+  secondaryLight: string;
+  background: string;
+  surface: string;
+  text: {
+    primary: string;
+    secondary: string;
+    disabled: string;
+    inverse: string;
+  };
+  error: string;
+  warning: string;
+  success: string;
+  info: string;
+  border: string;
+  divider: string;
+  shadow: {
+    light: string;
+    medium: string;
+    dark: string;
+  };
+  food: {
+    carrot: string;
+    strawberry: string;
+    garlic: string;
+    apple: string;
+    banana: string;
+    orange: string;
+    grapes: string;
+    watermelon: string;
+    broccoli: string;
+    peas: string;
+  };
+  gradient: {
+    primary: string[];
+    secondary: string[];
+    sunset: string[];
+    fresh: string[];
+  };
+}
 
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
@@ -39,38 +80,36 @@ export const colors = {
   whiteGrey: '#E7E7E6',
   goldB: '#E5A339',
   
-  // FIXED: Use string values instead of object
   background: '#FFFFFF',
-  backgroundSecondary: '#F8F9FA',
-  backgroundDark: '#151718',
+  surface: '#F5F5F5',
   
   text: {
-    primary: '#2C3E50',
-    secondary: '#7F8C8D',
-    inverse: '#FFFFFF',
-    muted: '#95A5A6',
-    disabled: '#BDC3C7',
-    grey: '#687076',
+    primary: '#212121',
+    secondary: '#757575',
+    disabled: '#BDBDBD',
+    inverse: '#FFFFFF'
   },
   
-  // FIXED: Use string values instead of object  
-  border: '#E1E8ED',
-  borderMedium: '#D0D7DE',
-  borderDark: '#8B9DC3',
+  border: '#E0E0E0',
+  divider: '#F0F0F0',
   
-  // FIXED: Added missing shadow properties
   shadow: {
-    light: '#000000',
-    dark: '#000000',
+    light: 'rgba(0, 0, 0, 0.1)',
+    medium: 'rgba(0, 0, 0, 0.15)',
+    dark: 'rgba(0, 0, 0, 0.2)'
   },
   
   food: {
-    fruits: '#FF6B6B',
-    vegetables: '#4ECDC4',
-    proteins: '#FFA07A', 
-    grains: '#D4B5A0',
-    dairy: '#FFF8DC',
-    fats: '#FFE66D',
+    carrot: '#FF6B35',
+    strawberry: '#FF1744',
+    garlic: '#F5DEB3',
+    apple: '#DC143C',
+    banana: '#FFE135',
+    orange: '#FFA500',
+    grapes: '#6B46C1',
+    watermelon: '#FC5C65',
+    broccoli: '#228B22',
+    peas: '#3CB371'
   },
   
   gamification: {
