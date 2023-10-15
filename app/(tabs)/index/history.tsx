@@ -4,14 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { colors } from '../../../constants/colors';
 import { getFoodImageSource } from '../../../utils/imageUtils';
@@ -40,6 +40,9 @@ interface MealHistoryFood {
 interface MealHistoryMeal {
   foods: MealHistoryFood[];
   totalTime: number; // in minutes
+  totalPlan: number; // total planned amount for the meal
+  totalEaten: number; // total eaten amount for the meal
+  mealPercentage: number; // percentage completion for the meal
 }
 
 interface MealHistory {
@@ -49,6 +52,9 @@ interface MealHistory {
   snack: MealHistoryMeal;
   date: string;
   childId: string;
+  dailyTotalPlan: number; // total planned amount for the day
+  dailyTotalEaten: number; // total eaten amount for the day
+  dailyPercentage: number; // overall daily percentage completion
 }
 
 const MealHistoryScreen = () => {
@@ -58,30 +64,24 @@ const MealHistoryScreen = () => {
   const [eatenAmounts, setEatenAmounts] = useState<{ [key: string]: string }>({});
   const { meals, getMeal, recordMeal } = useMealStore();
   const { selectedChildId } = useUserStore();
-  // Initial load effect
-  useEffect(() => {
-    console.log('History - Initial load effect, selectedChildId:', selectedChildId);
-    if (selectedChildId) {
-      console.log('History - Initial load calling getMeal with childId:', selectedChildId);
-      getMeal(selectedChildId);
-    }
-  }, []); // Only run on mount
 
-  // Effect for when selectedChildId changes
   useEffect(() => {
-    console.log('History - selectedChildId changed to:', selectedChildId);
     if (selectedChildId) {
-      console.log('History - calling getMeal with childId:', selectedChildId);
       getMeal(selectedChildId);
     }
-  }, [selectedChildId]); // Only depend on selectedChildId, not getMeal
+  }, []);
+
+  useEffect(() => {
+    if (selectedChildId) {
+      getMeal(selectedChildId);
+    }
+  }, [selectedChildId]);
 
   useEffect(() => {
     if (meals && meals.length > 0) {
       const firstMeal = meals[0] as any;
       const newMealPlans: MealPlan[] = [];
       
-      // Create meal plans from backend data
       if (firstMeal.breakfast?.foods) {
         newMealPlans.push({
           id: 'breakfast',
@@ -140,15 +140,13 @@ const MealHistoryScreen = () => {
       
       setMealPlans(newMealPlans);
     } else {
-      // Clear meal plans when no meals or when switching children
       setMealPlans([]);
     }
     
-    // Reset modal state and eaten amounts when switching children
     setShowFoodModal(false);
     setSelectedMealPlan(null);
     setEatenAmounts({});
-  }, [meals, selectedChildId]); // Also depend on selectedChildId
+  }, [meals, selectedChildId]);
 
   const formatTime = (milliseconds: number) => {
     const seconds = Math.floor(milliseconds / 1000);
@@ -157,23 +155,18 @@ const MealHistoryScreen = () => {
     return `${hours.toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
   };
 
-  // Separate Timer component that only re-renders itself
   const MealTimer = React.memo(({ startTime }: { startTime: number }) => {
     const [elapsedTime, setElapsedTime] = useState(0);
-
     useEffect(() => {
       const interval = setInterval(() => {
         setElapsedTime(Date.now() - startTime);
       }, 1000);
-
       return () => clearInterval(interval);
     }, [startTime]);
-
     return (
       <Text style={styles.mealTimer}>{formatTime(elapsedTime)}</Text>
     );
   });
-
   const handleStartMeal = (mealId: string) => {
     setMealPlans(prevPlans => 
       prevPlans.map(plan => 
@@ -185,9 +178,7 @@ const MealHistoryScreen = () => {
   };
 
   const handleFinishMeal = (mealPlan: MealPlan) => {
-    // Calculate final elapsed time and stop the timer
     const finalElapsedTime = mealPlan.startTime ? Date.now() - mealPlan.startTime : 0;
-    
     setMealPlans(prevPlans => 
       prevPlans.map(plan => 
         plan.id === mealPlan.id 
@@ -195,8 +186,6 @@ const MealHistoryScreen = () => {
           : plan
       )
     );
-    
-    // Open modal to input eaten amounts (NO backend call here)
     setSelectedMealPlan(mealPlan);
     setShowFoodModal(true);
   };
@@ -209,14 +198,12 @@ const MealHistoryScreen = () => {
   };
 
   const calculateMealHistory = (): MealHistory => {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+    const today = new Date().toISOString().split('T')[0];
     const createMealHistoryMeal = (mealPlan: MealPlan): MealHistoryMeal => {
       const foods: MealHistoryFood[] = mealPlan.plannedFoods.map(food => {
         const planned = parseFloat(food.plannedAmount) || 0;
         const eaten = parseFloat(food.eatenAmount || '0') || 0;
         const percentage = planned > 0 ? Math.round((eaten / planned) * 100) : 0;
-        
         return {
           foodName: food.name,
           plan: planned,
@@ -224,40 +211,52 @@ const MealHistoryScreen = () => {
           percentage: percentage
         };
       });
-      
-      const totalTime = mealPlan.finalTime ? Math.round(mealPlan.finalTime / 60000) : 0; // Convert ms to minutes
-      
+      const totalTime = mealPlan.finalTime ? Math.round(mealPlan.finalTime / 60000) : 0;
+      const totalPlan = foods.reduce((sum, food) => sum + food.plan, 0);
+      const totalEaten = foods.reduce((sum, food) => sum + food.eaten, 0);
+      const mealPercentage = totalPlan > 0 ? Math.round((totalEaten / totalPlan) * 100) : 0;
       return {
         foods,
-        totalTime
+        totalTime,
+        totalPlan,
+        totalEaten,
+        mealPercentage
       };
     };
-
     const breakfast = mealPlans.find(plan => plan.id === 'breakfast');
     const lunch = mealPlans.find(plan => plan.id === 'lunch');
     const dinner = mealPlans.find(plan => plan.id === 'dinner');
     const snack = mealPlans.find(plan => plan.id === 'snack');
-
-    return {
-      breakfast: breakfast ? createMealHistoryMeal(breakfast) : { foods: [], totalTime: 0 },
-      lunch: lunch ? createMealHistoryMeal(lunch) : { foods: [], totalTime: 0 },
-      dinner: dinner ? createMealHistoryMeal(dinner) : { foods: [], totalTime: 0 },
-      snack: snack ? createMealHistoryMeal(snack) : { foods: [], totalTime: 0 },
+    const dailyTotalPlan = (breakfast?.plannedFoods.reduce((sum, food) => sum + parseFloat(food.plannedAmount) || 0, 0) || 0) +
+                            (lunch?.plannedFoods.reduce((sum, food) => sum + parseFloat(food.plannedAmount) || 0, 0) || 0) +
+                            (dinner?.plannedFoods.reduce((sum, food) => sum + parseFloat(food.plannedAmount) || 0, 0) || 0) +
+                            (snack?.plannedFoods.reduce((sum, food) => sum + parseFloat(food.plannedAmount) || 0, 0) || 0);
+    const dailyTotalEaten = (breakfast?.plannedFoods.reduce((sum, food) => sum + parseFloat(food.eatenAmount || '0') || 0, 0) || 0) +
+                            (lunch?.plannedFoods.reduce((sum, food) => sum + parseFloat(food.eatenAmount || '0') || 0, 0) || 0) +
+                            (dinner?.plannedFoods.reduce((sum, food) => sum + parseFloat(food.eatenAmount || '0') || 0, 0) || 0) +
+                            (snack?.plannedFoods.reduce((sum, food) => sum + parseFloat(food.eatenAmount || '0') || 0, 0) || 0);
+    const dailyPercentage = dailyTotalPlan > 0 ? Math.round((dailyTotalEaten / dailyTotalPlan) * 100) : 0;
+    const mealHistory = {
+      breakfast: breakfast ? createMealHistoryMeal(breakfast) : { foods: [], totalTime: 0, totalPlan: 0, totalEaten: 0, mealPercentage: 0 },
+      lunch: lunch ? createMealHistoryMeal(lunch) : { foods: [], totalTime: 0, totalPlan: 0, totalEaten: 0, mealPercentage: 0 },
+      dinner: dinner ? createMealHistoryMeal(dinner) : { foods: [], totalTime: 0, totalPlan: 0, totalEaten: 0, mealPercentage: 0 },
+      snack: snack ? createMealHistoryMeal(snack) : { foods: [], totalTime: 0, totalPlan: 0, totalEaten: 0, mealPercentage: 0 },
       date: today,
-      childId: selectedChildId as any
+      childId: selectedChildId as any,
+      dailyTotalPlan,
+      dailyTotalEaten,
+      dailyPercentage
     };
+    return mealHistory;
   };
-
   const saveMealHistoryToBackend = async (mealHistory: any) => {
-    console.log('mealHistory:>>---->', mealHistory);
     try {
       const result = await recordMeal(mealHistory);
-      console.log("result:>>---->", result);
+      return result;
     } catch (error) {
       console.error('Error saving meal history:', error);
     }
   };
-
   const handleSaveEatenAmounts = () => {
     if (selectedMealPlan) {
       setMealPlans(prevPlans => 
@@ -273,27 +272,22 @@ const MealHistoryScreen = () => {
             : plan
         )
       );
-      
       setShowFoodModal(false);
       setSelectedMealPlan(null);
       setEatenAmounts({});
     }
   };
-
   const sendAllMealHistoryToBackend = async () => {
     const mealHistory = calculateMealHistory();
     await saveMealHistoryToBackend(mealHistory);
     router.push('/(tabs)' as any);
   };
-
   const isMealCompleted = (mealPlan: MealPlan) => {
     return mealPlan.plannedFoods.every(food => food.eatenAmount && food.eatenAmount !== '');
   };
-
   const isAllMealsCompleted = () => {
     return mealPlans.every(plan => isMealCompleted(plan));
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -305,7 +299,6 @@ const MealHistoryScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Time to Eat</Text>
       </View>
-
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -317,7 +310,6 @@ const MealHistoryScreen = () => {
             <Text style={styles.searchPlaceholder}>Search here</Text>
           </View>
         </View>
-
         {/* Meal Plans Section */}
         <View style={styles.mealPlansSection}>
           <Text style={styles.sectionTitle}>Today's Meals</Text>
@@ -351,11 +343,10 @@ const MealHistoryScreen = () => {
                            </Text>
                          )}
                        </View>
-          </View>
-          </View>          
+                     </View>
+                   </View>
                  ))}
           </View>
-          
               <View style={styles.mealPlanActions}>
                 {!plan.isActive ? (
                   <TouchableOpacity
@@ -383,7 +374,6 @@ const MealHistoryScreen = () => {
             </View>
           ))}
           </View>
-          
         {/* Send All Button */}
         {isAllMealsCompleted() && (
           <View style={styles.sendAllSection}>
@@ -396,7 +386,6 @@ const MealHistoryScreen = () => {
           </View>
         )}
       </ScrollView>
-
       {/* Food Input Modal */}
       <Modal
         visible={showFoodModal}
@@ -426,7 +415,7 @@ const MealHistoryScreen = () => {
                        <Text style={styles.foodInputName}>{food.name}</Text>
                        <Text style={styles.foodInputPlanned}>
                          Planned: {food.plannedAmount}{food.unit}
-          </Text>
+                        </Text>
                      </View>
                    </View>
                    <View style={styles.foodInputField}>

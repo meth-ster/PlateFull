@@ -1,10 +1,10 @@
+import { useMealStore } from '@/stores/mealStore';
+import { useUserStore } from '@/stores/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect } from 'react';
 import {
-  Dimensions,
   Image,
-  ImageSourcePropType,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,106 +16,82 @@ import Animated, {
   FadeInUp
 } from 'react-native-reanimated';
 import { colors } from '../../../constants/colors';
-import { getFoodById } from '../../../db/foods';
-
-const { width } = Dimensions.get('window');
-
-interface NavigationProps {
-  navigate: (screen: string, params?: any) => void;
-  goBack: () => void;
-}
+import { getFoodImageSource } from '../../../utils/imageUtils';
 
 interface MealItemType {
-  name: string;
-  value: string;
-  image?: ImageSourcePropType;
+  foodName: string;
+  plan: number;
+  eaten: number;
+  percentage: number;
+  _id: string;
 }
 
 interface MealMealsType {
-  fruits: MealItemType;
-  vegetables: MealItemType;
-  protein: MealItemType;
-  [key: string]: MealItemType;
+  foods: MealItemType[];
+  totalTime: number;
+  mealPercentage: number;
+  totalPlan: number;
+  totalEaten: number;
 }
 
-interface MealType {
-  id: number;
+interface MealHistoryType {
+  _id: string;
+  childId: string;
+  parentId: string;
   date: string;
-  time: string;
-  meals: MealMealsType;
+  dailyPercentage: number;
+  dailyTotalPlan: number;
+  dailyTotalEaten: number;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  breakfast: MealMealsType;
+  lunch: MealMealsType;
+  dinner: MealMealsType;
+  snack: MealMealsType;
 }
 
-const LeaderboardScreen = ({ navigation }: { navigation: NavigationProps }) => {
-  const [activeTab, setActiveTab] = useState('mealHistory');
+const LeaderboardScreen = () => {
+  const { selectedChildId } = useUserStore();
+  const {getMealHistoryByIdToday, mealHistory} = useMealStore();
   
-  const weeklyNutrients = {
-    protein: 45,
-    fats: 28,
-    carbs: 27,
+  useEffect(() => {
+    if (selectedChildId) {
+      getMealHistoryByIdToday(selectedChildId);
+    }
+  }, [selectedChildId]);
+  
+  const displayMealHistory = mealHistory && mealHistory.length > 0 ? mealHistory : [];
+  
+  const weeklyNutrients = displayMealHistory.length > 0 ? {
+    Breakfast: displayMealHistory[0].breakfast.mealPercentage || 0,
+    Lunch: displayMealHistory[0].lunch.mealPercentage || 0,
+    Dinner: displayMealHistory[0].dinner.mealPercentage || 0,
+    Snack: displayMealHistory[0].snack.mealPercentage || 0,
+    change: '+3% From Last Month'
+  } : {
+    Breakfast: 0,
+    Lunch: 0,
+    Dinner: 0,
+    Snack: 0,
     change: '+3% From Last Month'
   };
 
-  const todayProgress = {
-    completed: 60,
-    remaining: 40
+  const todayProgress = displayMealHistory.length > 0 ? {
+    completed: displayMealHistory[0].dailyPercentage || 0,
+    remaining: 100 - (displayMealHistory[0].dailyPercentage || 0)
+  } : {
+    completed: 0,
+    remaining: 100
   };
 
-  const achievements = [
-    {
-      id: 1,
-      title: 'Today Nutrient',
-      description: 'Completed',
-      progress: 60,
-      icon: '🏆'
-    },
-    {
-      id: 2,
-      title: 'Produce weekly Variety',
-      description: "you've earned a new reward",
-      icon: '⭐'
-    }
-  ];
-
-  // Get food images from database
-  const apple = getFoodById('apple');
-  const carrot = getFoodById('carrot');
-  const beef = getFoodById('beef');
-
-  const mealHistory: MealType[] = [
-    {
-      id: 1,
-      date: '8/1/2024',
-      time: '19:30pm',
-      meals: {
-        fruits: { name: 'Fruits Eaten', value: 'CARBS 27%', image: require('../../../assets/images/foods/apple.png') },
-        vegetables: { name: 'Veg Eaten', value: 'NUTRIENTS 27%', image: require('../../../assets/images/foods/carrot.png') },
-        protein: { name: 'Protien Eaten', value: 'CARBS 27%', image: require('../../../assets/images/foods/beef.png') }
-      }
-    },
-    {
-      id: 2,
-      date: '8/1/2024',
-      time: '19:30pm',
-      meals: {
-        fruits: { name: 'Fruits Eaten', value: 'CARBS 27%', image: require('../../../assets/images/foods/apple.png') },
-        vegetables: { name: 'Veg Eaten', value: 'NUTRIENTS 27%', image: require('../../../assets/images/foods/carrot.png') },
-        protein: { name: 'Protien Eaten', value: 'CARBS 27%', image: require('../../../assets/images/foods/beef.png') }
-      }
-    }
-  ];
-
   const NutrientChart = () => {
-    const chartSize = 150;
-    const strokeWidth = 15;
-    const radius = (chartSize - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    
     const segments = [
-      { percentage: weeklyNutrients.protein, color: '#4CAF50', label: 'Protein' },
-      { percentage: weeklyNutrients.fats, color: '#FF9800', label: 'Fats' },
-      { percentage: weeklyNutrients.carbs, color: '#2196F3', label: 'Carbs' }
+      { percentage: weeklyNutrients.Breakfast, color: '#4CAF50', label: 'Breakfast' },
+      { percentage: weeklyNutrients.Lunch, color: '#FF9800', label: 'Lunch' },
+      { percentage: weeklyNutrients.Dinner, color: '#2196F3', label: 'Dinner' },
+      { percentage: weeklyNutrients.Snack, color: '#2196F3', label: 'Snack' }
     ];
-
     return (
       <View style={styles.chartContainer}>
         <View style={styles.pieChart}>
@@ -123,7 +99,6 @@ const LeaderboardScreen = ({ navigation }: { navigation: NavigationProps }) => {
             <Image source={require('../../../assets/images/characters/marketing.png')} style={{width: 150, height: 150}}/>
           </View>
         </View>
-        
         <View style={styles.chartLegend}>
           {segments.map((segment, index) => (
             <View key={index} style={styles.legendItem}>
@@ -137,43 +112,113 @@ const LeaderboardScreen = ({ navigation }: { navigation: NavigationProps }) => {
     );
   };
 
-  const MealCard = ({ meal, index }: { meal: MealType, index: number }) => {
+  const MealCard = ({ meal, index }: { meal: MealHistoryType, index: number }) => {
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    };
+    const getFoodImage = (foodName: string) => {
+      return getFoodImageSource(foodName);
+    };
     return (
       <Animated.View
         entering={FadeInUp.delay(index * 100).springify()}
         style={styles.mealCard}
       >
         <View style={styles.mealHeader}>
-          <Text style={styles.mealTitle}>Dinner</Text>
-          <Text style={styles.mealDateTime}>{meal.date} - {meal.time}</Text>
-        </View>
-        
+          <Text style={styles.mealTitle}>Meal History</Text>
+          <Text style={styles.mealDateTime}>{formatDate(meal.date)}</Text>
+        </View>       
         <View style={styles.mealItems}>
-          {Object.values(meal.meals).map((item: MealItemType, idx) => (
-            <View key={idx} style={styles.mealItem}>
-              <View style={styles.mealItemLeft}>
-                  {item.image ? (
-                    <Image 
-                      source={item.image} 
-                      style={styles.mealImage}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <Image source={item.image} style={{width: 20, height: 20}}/>
-                  )}
-                <View>
-                  <Text style={styles.mealItemName}>{item.name}</Text>
-                  <Text style={styles.mealItemValue}>{item.value}</Text>
+          {/* Breakfast */}
+          <View style={styles.mealSection}>
+            <View style={styles.mealSectionHeader}>
+              <Text style={styles.mealSectionTitle}>Breakfast</Text>
+              <Text style={styles.mealSectionPercentage}>{meal.breakfast.mealPercentage}%</Text>
+            </View>
+            {meal.breakfast.foods.map((food, foodIdx) => (
+              <View key={foodIdx} style={styles.foodItem}>
+                <View style={styles.foodItemContent}>
+                  <Image source={getFoodImage(food.foodName)} style={styles.foodIcon} />
+                  <View style={styles.foodTextContainer}>
+                    <Text style={styles.foodName}>{food.foodName}</Text>
+                    <Text style={styles.foodDetails}>
+                      {food.eaten}g / {food.plan}g ({food.percentage}%)
+                    </Text>
+                  </View>
                 </View>
               </View>
-              <TouchableOpacity>
-              <Image source={require('../../../assets/images/icons/Bookmark.png')} style={{width: 30, height: 30}}/>
-              </TouchableOpacity>
+            ))}
+          </View>
+          {/* Lunch */}
+          <View style={styles.mealSection}>
+            <View style={styles.mealSectionHeader}>
+              <Text style={styles.mealSectionTitle}>Lunch</Text>
+              <Text style={styles.mealSectionPercentage}>{meal.lunch.mealPercentage}%</Text>
             </View>
-          ))}
+            {meal.lunch.foods.map((food, foodIdx) => (
+              <View key={foodIdx} style={styles.foodItem}>
+                <View style={styles.foodItemContent}>
+                  <Image source={getFoodImage(food.foodName)} style={styles.foodIcon} />
+                  <View style={styles.foodTextContainer}>
+                    <Text style={styles.foodName}>{food.foodName}</Text>
+                    <Text style={styles.foodDetails}>
+                      {food.eaten}g / {food.plan}g ({food.percentage}%)
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+          {/* Dinner */}
+          <View style={styles.mealSection}>
+            <View style={styles.mealSectionHeader}>
+              <Text style={styles.mealSectionTitle}>Dinner</Text>
+              <Text style={styles.mealSectionPercentage}>{meal.dinner.mealPercentage}%</Text>
+            </View>
+            {meal.dinner.foods.map((food, foodIdx) => (
+              <View key={foodIdx} style={styles.foodItem}>
+                <View style={styles.foodItemContent}>
+                  <Image source={getFoodImage(food.foodName)} style={styles.foodIcon} />
+                  <View style={styles.foodTextContainer}>
+                    <Text style={styles.foodName}>{food.foodName}</Text>
+                    <Text style={styles.foodDetails}>
+                      {food.eaten}g / {food.plan}g ({food.percentage}%)
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+          {/* Snack */}
+          <View style={styles.mealSection}>
+            <View style={styles.mealSectionHeader}>
+              <Text style={styles.mealSectionTitle}>Snack</Text>
+              <Text style={styles.mealSectionPercentage}>{meal.snack.mealPercentage}%</Text>
+            </View>
+            {meal.snack.foods.map((food, foodIdx) => (
+              <View key={foodIdx} style={styles.foodItem}>
+                <View style={styles.foodItemContent}>
+                  <Image source={getFoodImage(food.foodName)} style={styles.foodIcon} />
+                  <View style={styles.foodTextContainer}>
+                    <Text style={styles.foodName}>{food.foodName}</Text>
+                    <Text style={styles.foodDetails}>
+                      {food.eaten}g / {food.plan}g ({food.percentage}%)
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
-        
-        <Text style={styles.mealId}>172365816045x763641946663901300</Text>
+        <View style={styles.mealFooter}>
+          <Text style={styles.dailyTotal}>Daily Total: {meal.dailyPercentage}%</Text>
+          <Text style={styles.mealId}>ID: {meal._id}</Text>
+        </View>
       </Animated.View>
     );
   };
@@ -189,7 +234,6 @@ const LeaderboardScreen = ({ navigation }: { navigation: NavigationProps }) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Our Chat</Text>
       </View>
-
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -201,21 +245,18 @@ const LeaderboardScreen = ({ navigation }: { navigation: NavigationProps }) => {
             <Text style={styles.searchPlaceholder}>Search here</Text>
           </View>
         </View>
-
         <Text style={styles.sectionTitle}>Meal History</Text>
-
         {/* Weekly Nutrient Chart */}
         <Animated.View
           entering={FadeIn.springify()}
           style={styles.nutrientCard}
         >
           <View style={styles.nutrientHeader}>
-            <Text style={styles.nutrientTitle}>Weekly Nutrient</Text>
+            <Text style={styles.nutrientTitle}>Today's Nutrient</Text>
             <Text style={styles.nutrientChange}>{weeklyNutrients.change}</Text>
           </View>
           <NutrientChart />
         </Animated.View>
-
         {/* Today Progress */}
         <Animated.View
           entering={FadeIn.delay(200).springify()}
@@ -223,20 +264,17 @@ const LeaderboardScreen = ({ navigation }: { navigation: NavigationProps }) => {
         >
           <View style={styles.progressHeader}>
             <Image source={require('../../../assets/images/icons/Bookmark.png')} style={{width: 30, height: 30}}/>
-            <Text style={styles.progressTitle}>Today Nutrient</Text>
+            <Text style={styles.progressTitle}>Total Nutrient</Text>
             <Text style={styles.progressPercentage}>{todayProgress.completed}%</Text>
           </View>          
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${todayProgress.completed}%` }]} />
-          </View>
-          
+          </View>    
           <View style={styles.progressLabels}>
             <Text style={styles.progressLabel1}>Completed</Text>
             <Text style={styles.progressLabel2}>Remaining</Text>
           </View>
-          
         </Animated.View>
-
         {/* Achievement */}
         <Animated.View
           entering={FadeIn.delay(300).springify()}
@@ -248,11 +286,20 @@ const LeaderboardScreen = ({ navigation }: { navigation: NavigationProps }) => {
             <Text style={styles.achievementSubtext}>you've earned a new reward</Text>
           </Text>
         </Animated.View>
-
         {/* Meal History */}
-        {mealHistory.map((meal, index) => (
-          <MealCard key={meal.id} meal={meal} index={index} />
-        ))}
+        {displayMealHistory.length > 0 ? (
+          displayMealHistory.map((meal: MealHistoryType, index: number) => (
+            <MealCard key={meal._id} meal={meal} index={index} />
+          ))
+        ) : (
+          <Animated.View
+            entering={FadeIn.delay(400).springify()}
+            style={styles.emptyStateCard}
+          >
+            <Text style={styles.emptyStateText}>No meal history available</Text>
+            <Text style={styles.emptyStateSubtext}>Complete some meals to see your history here</Text>
+          </Animated.View>
+        )}
       </ScrollView>
     </View>
   );
@@ -487,42 +534,97 @@ const styles = StyleSheet.create({
   mealItems: {
     marginBottom: 12,
   },
-  mealItem: {
+  mealSection: {
+    marginBottom: 20,
+  },
+  mealSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  mealSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    flex: 1,
+  },
+  mealSectionPercentage: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  foodItem: {
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  mealItemLeft: {
+  foodItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  mealEmoji: {
-    fontSize: 24,
+  foodIcon: {
+    width: 30,
+    height: 30,
+    marginRight: 10,
+    borderRadius: 8,
   },
-  mealItemName: {
-    fontSize: 16,
+  foodTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  foodName: {
+    fontSize: 14,
     fontWeight: '500',
     color: colors.text.primary,
   },
-  mealItemValue: {
-    fontSize: 10,
+  foodDetails: {
+    fontSize: 12,
     color: colors.text.secondary,
     marginTop: 2,
+  },
+  mealFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  dailyTotal: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   mealId: {
     fontSize: 12,
     color: colors.text.secondary,
     opacity: 0.5,
-    textAlign: 'right',
   },
   mealImage: {
     width: 48,
     height: 48,
     borderRadius: 8,
    },
+  emptyStateCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
 });
 
 export default LeaderboardScreen;

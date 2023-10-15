@@ -39,12 +39,14 @@ export interface MealState {
   currentMeal: Partial<MealEntry> | null;
   isLoading: boolean;
   error: string | null;
+  mealHistory: any;
 }
 
 export interface MealActions {
   getMeal: (childId?: string) => Promise<void>;
   addMeal: (mealData: Omit<MealEntry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   recordMeal: (mealData: any) => Promise<any>;
+  getMealHistoryByIdToday: (childId: string) => Promise<any>;
   updateMeal: (mealId: string, mealData: Partial<MealEntry>) => Promise<void>;
   removeMeal: (mealId: string) => Promise<void>;
   getMealsByDate: (date: string, childId?: string) => MealEntry[];
@@ -67,7 +69,7 @@ export const useMealStore = create<MealStore>((set, get) => ({
   currentMeal: null,
   isLoading: false,
   error: null,
-
+  mealHistory: [],
   getMeal: async (childId?: string) => {
     if (!childId) return;
     const result = await apiService.getMeals(childId);
@@ -101,6 +103,11 @@ export const useMealStore = create<MealStore>((set, get) => ({
         isLoading: false,
       });
     }
+  },
+
+  getMealHistoryByIdToday: async (childId: string) => {
+    const result = await apiService.getMealHistoryByIdToday(childId);
+    set({ mealHistory: result.data });
   },
 
   updateMeal: async (mealId, mealData) => {
