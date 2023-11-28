@@ -13,9 +13,9 @@ export const HIDDEN_TAB_PAGES = [
   '/meals/logging',
   '/profile/setup',
   // Hide tab bar for specific (tabs) routes
-  '/(tabs)/index/leaderboard',
-  '/(tabs)/index/tracking',
-  '/(tabs)/index/history',
+  '/leaderboard',
+  '/tracking',
+  '/history',
   // Alternative patterns
   'leaderboard',
   'tracking',

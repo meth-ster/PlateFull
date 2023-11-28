@@ -1,0 +1,233 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { storage } from '../utils/storage';
+
+export interface FoodItem {
+  id: string;
+  name: string;
+  category: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  image?: string;
+}
+
+export interface MealEntry {
+  id: string;
+  childId: string;
+  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  foods: Array<{
+    foodId: string;
+    food: FoodItem;
+    quantity: number;
+    unit: string;
+  }>;
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  totalFiber: number;
+  notes?: string;
+  image?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MealState {
+  meals: MealEntry[];
+  currentMeal: Partial<MealEntry> | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface MealActions {
+  addMeal: (mealData: Omit<MealEntry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateMeal: (mealId: string, mealData: Partial<MealEntry>) => Promise<void>;
+  removeMeal: (mealId: string) => Promise<void>;
+  getMealsByDate: (date: string, childId?: string) => MealEntry[];
+  startNewMeal: (type: MealEntry['type'], childId: string) => void;
+  addFoodToCurrentMeal: (food: FoodItem, quantity: number, unit: string) => void;
+  removeFoodFromCurrentMeal: (foodId: string) => void;
+  saveCurrentMeal: () => Promise<void>;
+  clearCurrentMeal: () => void;
+  setMeals: (meals: MealEntry[]) => void;
+  setCurrentMeal: (meal: Partial<MealEntry> | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  clearError: () => void;
+}
+
+export type MealStore = MealState & MealActions;
+
+export const useMealStore = create<MealStore>()(
+  persist(
+    (set, get) => ({
+      meals: [],
+      currentMeal: null,
+      isLoading: false,
+      error: null,
+
+      addMeal: async (mealData) => {
+        set({ isLoading: true, error: null });
+        try {
+          const newMeal: MealEntry = {
+            ...mealData,
+            id: Date.now().toString(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          set({ meals: [...get().meals, newMeal], isLoading: false });
+        } catch (error) {
+          set({
+            error: error instanceof Error ? error.message : 'Failed to add meal',
+            isLoading: false,
+          });
+        }
+      },
+
+      updateMeal: async (mealId, mealData) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedMeals = get().meals.map(meal =>
+            meal.id === mealId
+              ? { ...meal, ...mealData, updatedAt: new Date().toISOString() }
+              : meal
+          );
+          set({ meals: updatedMeals, isLoading: false });
+        } catch (error) {
+          set({
+            error: error instanceof Error ? error.message : 'Failed to update meal',
+            isLoading: false,
+          });
+        }
+      },
+
+      removeMeal: async (mealId) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedMeals = get().meals.filter(meal => meal.id !== mealId);
+          set({ meals: updatedMeals, isLoading: false });
+        } catch (error) {
+          set({
+            error: error instanceof Error ? error.message : 'Failed to remove meal',
+            isLoading: false,
+          });
+        }
+      },
+
+      getMealsByDate: (date, childId) => {
+        const meals = get().meals;
+        return meals.filter(meal => {
+          const mealDate = new Date(meal.createdAt).toDateString();
+          const targetDate = new Date(date).toDateString();
+          return mealDate === targetDate && (!childId || meal.childId === childId);
+        });
+      },
+
+      startNewMeal: (type, childId) => {
+        set({
+          currentMeal: {
+            type,
+            childId,
+            foods: [],
+            totalCalories: 0,
+            totalProtein: 0,
+            totalCarbs: 0,
+            totalFat: 0,
+            totalFiber: 0,
+          }
+        });
+      },
+
+      addFoodToCurrentMeal: (food, quantity, unit) => {
+        const currentMeal = get().currentMeal;
+        if (!currentMeal) return;
+
+        const existingFoodIndex = currentMeal.foods?.findIndex(f => f.foodId === food.id);
+        let updatedFoods = [...(currentMeal.foods || [])];
+
+        if (existingFoodIndex >= 0) {
+          updatedFoods[existingFoodIndex] = {
+            ...updatedFoods[existingFoodIndex],
+            quantity: updatedFoods[existingFoodIndex].quantity + quantity,
+          };
+        } else {
+          updatedFoods.push({
+            foodId: food.id,
+            food,
+            quantity,
+            unit,
+          });
+        }
+
+        const totals = updatedFoods.reduce((acc, item) => ({
+          calories: acc.calories + (item.food.calories * item.quantity),
+          protein: acc.protein + (item.food.protein * item.quantity),
+          carbs: acc.carbs + (item.food.carbs * item.quantity),
+          fat: acc.fat + (item.food.fat * item.quantity),
+          fiber: acc.fiber + (item.food.fiber * item.quantity),
+        }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
+
+        set({
+          currentMeal: {
+            ...currentMeal,
+            foods: updatedFoods,
+            ...totals,
+          }
+        });
+      },
+
+      removeFoodFromCurrentMeal: (foodId) => {
+        const currentMeal = get().currentMeal;
+        if (!currentMeal) return;
+
+        const updatedFoods = currentMeal.foods?.filter(f => f.foodId !== foodId) || [];
+        
+        const totals = updatedFoods.reduce((acc, item) => ({
+          calories: acc.calories + (item.food.calories * item.quantity),
+          protein: acc.protein + (item.food.protein * item.quantity),
+          carbs: acc.carbs + (item.food.carbs * item.quantity),
+          fat: acc.fat + (item.food.fat * item.quantity),
+          fiber: acc.fiber + (item.food.fiber * item.quantity),
+        }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
+
+        set({
+          currentMeal: {
+            ...currentMeal,
+            foods: updatedFoods,
+            ...totals,
+          }
+        });
+      },
+
+      saveCurrentMeal: async () => {
+        const currentMeal = get().currentMeal;
+        if (!currentMeal || !currentMeal.childId || !currentMeal.type) {
+          throw new Error('Invalid meal data');
+        }
+
+        await get().addMeal(currentMeal as Omit<MealEntry, 'id' | 'createdAt' | 'updatedAt'>);
+        set({ currentMeal: null });
+      },
+
+      clearCurrentMeal: () => {
+        set({ currentMeal: null });
+      },
+
+      setMeals: (meals) => set({ meals }),
+      setCurrentMeal: (meal) => set({ currentMeal: meal }),
+      setLoading: (loading) => set({ isLoading: loading }),
+      setError: (error) => set({ error }),
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: 'meal-storage',
+      storage: createJSONStorage(() => storage),
+      partialize: (state) => ({
+        meals: state.meals,
+      }),
+    }
+  )
+); 

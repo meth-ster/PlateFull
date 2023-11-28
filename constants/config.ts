@@ -57,7 +57,9 @@ export interface Config {
 
 export const config: Config = {
   APP_NAME: 'PlateFull',
-  API_BASE_URL: 'https://api.platefull.com',
+  API_BASE_URL: process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:5000/api'  // Use proxy in development
+    : 'https://api.platefull.com',
   
   // Google OAuth Configuration
   GOOGLE_IOS_CLIENT_ID: 'YOUR_IOS_CLIENT_ID',

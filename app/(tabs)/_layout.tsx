@@ -1,10 +1,12 @@
-import { Tabs, usePathname } from 'expo-router';
+import { router, Tabs, usePathname } from 'expo-router';
+import { useEffect } from 'react';
 import { Image, Platform } from 'react-native';
 
 import { HapticTab } from '../../components/HapticTab';
 import TabBarBackground from '../../components/ui/TabBarBackground';
 import { colors } from '../../constants/colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
+import { useAuthStore } from '../../stores/authStore';
 import { useTabBarVisibility } from '../../utils/tabBarUtils';
 
 interface TabLayoutProps {
@@ -14,6 +16,32 @@ interface TabLayoutProps {
 export default function TabLayout({ hideTabBar = false }: TabLayoutProps) {
   const colorScheme = useColorScheme();
   const { shouldHideTabBar } = useTabBarVisibility();
+  const { isAuthenticated, isNewUser, isLoading, initializeAuth } = useAuthStore();
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  useEffect(() => {
+    // Only redirect after a delay to ensure layout is mounted
+    if (!isLoading && !isAuthenticated) {
+      const timer = setTimeout(() => {
+        router.replace('/auth/sign-in');
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, isLoading]);
+
+  // Don't render anything while checking auth or redirecting
+  if (isLoading || !isAuthenticated) {
+    return null;
+  }
+
+  // If user is new and hasn't completed onboarding, redirect to child profile setup
+  if (isNewUser) {
+    router.replace('/profile/child-profile');
+    return null;
+  }
 
   // Dynamic tab bar style based on props and current route
   const getTabBarStyle = () => {
