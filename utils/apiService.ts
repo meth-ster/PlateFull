@@ -357,6 +357,12 @@ class ApiService {
     });
   }
 
+  async getMealHistoryByIdToday(childId: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/meals/history/${childId}`, {
+      method: 'GET',
+    });
+  }
+
   async updateMeal(mealId: string, mealData: any): Promise<ApiResponse<any>> {
     return this.request<any>(`/meals/${mealId}`, {
       method: 'PUT',
