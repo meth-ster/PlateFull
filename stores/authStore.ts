@@ -13,6 +13,7 @@ export interface User {
   preferences?: any;
   children?: any[];
   hasCompletedOnboarding?: boolean;
+  user?: User;
 }
 
 export interface AuthState {

@@ -323,6 +323,12 @@ class ApiService {
     });
   }
 
+  async getChildById(childId: string): Promise<ApiResponse<any>> {
+    return this.request<any>(`/children/${childId}`, {
+      method: 'GET',
+    });
+  }
+
   async updateChild(childId: string, childData: any): Promise<ApiResponse<any>> {
     return this.request<any>(`/children/${childId}`, {
       method: 'PUT',
