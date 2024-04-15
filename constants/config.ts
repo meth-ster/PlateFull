@@ -105,13 +105,13 @@ export const config: Config = {
   
   // Age Ranges
   ageRanges: [
-    { label: '6-12 months', value: '6-12m' },
-    { label: '1-2 years', value: '1-2y' },
-    { label: '2-3 years', value: '2-3y' },
-    { label: '3-4 years', value: '3-4y' },
-    { label: '4-5 years', value: '4-5y' },
-    { label: '5-6 years', value: '5-6y' },
-    { label: '6+ years', value: '6+y' }
+    { label: '6-9 months', value: '6-9m' },
+    { label: '9-12 months', value: '9-12m' },
+    { label: '12-18 months', value: '12-18m' },
+    { label: '18-24 months', value: '18-24m' },
+    { label: '24-30 months', value: '24-30m' },
+    { label: '30-36 months', value: '30-36m' },
+    { label: '36+ months', value: '36m+' },
   ],
   
   // Dietary Restrictions
@@ -123,7 +123,15 @@ export const config: Config = {
     { label: 'Dairy Free', value: 'dairy_free' },
     { label: 'Nut Free', value: 'nut_free' },
     { label: 'Egg Free', value: 'egg_free' },
-    { label: 'Soy Free', value: 'soy_free' }
+    { label: 'Soy Free', value: 'soy_free' },
+    { label: 'Shellfish Free', value: 'shellfish_free' },
+    { label: 'Fish Free', value: 'fish_free' },
+    { label: 'Pork Free', value: 'pork_free' },
+    { label: 'Beef Free', value: 'beef_free' },
+    { label: 'Chicken Free', value: 'chicken_free' },
+    { label: 'Turkey Free', value: 'turkey_free' },
+    { label: 'Lamb Free', value: 'lamb_free' },
+    { label: 'Other', value: 'other' }
   ]
 };
 

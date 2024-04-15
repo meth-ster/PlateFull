@@ -726,7 +726,7 @@ const MealTrackingScreen = ({ navigation }: { navigation: NavigationProps }) => 
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.foodGrid}>
-            {foods.map((food, index) => (
+            {foods.filter(f => f.isAllowed).map((food, index) => (
               <FoodItem 
                 key={food.id} 
                 food={food} 
@@ -752,21 +752,6 @@ const MealTrackingScreen = ({ navigation }: { navigation: NavigationProps }) => 
             </View>
           </Animated.View>
         )}
-
-        {/* {completedMeals.size > 0 && (
-          <Animated.View 
-            entering={FadeIn.springify()}
-            style={styles.mealSummaryFooter}
-          >
-            <View style={styles.mealSummaryContainer}>
-              {getMealSummary.map((summary, index) => (
-                <Text key={index} style={styles.mealSummaryText}>
-                  {summary}
-                </Text>
-              ))}
-            </View>
-          </Animated.View>
-        )} */}
       </View>
 
       <AmountModal 
@@ -872,7 +857,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
     paddingBottom: 15,
     paddingTop: 13,
-    marginBottom: 140,
+    marginBottom: 30,
     marginTop: 5,
     flexDirection: 'row',
     alignItems: 'center',

@@ -15,7 +15,6 @@ import {
   View
 } from "react-native";
 import Animated, {
-  FadeInLeft,
   FadeInUp,
   SlideInUp,
   SlideOutDown
@@ -24,6 +23,7 @@ import Button from "../../../../components/common/Button";
 import { colors } from "../../../../constants/colors";
 import foodGuideData from "../../../../db/foods.json";
 import { getFoodImageSource } from "../../../../utils/imageUtils";
+import { getFoodVideoSource } from "../../../../utils/videoUtils";
 
 const { width } = Dimensions.get("window");
 
@@ -84,63 +84,65 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showFoodDetails, setShowFoodDetails] = useState(false);
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
-  const [videoSource, setVideoSource] = useState<string | null>(null);
+  const [videoSource, setVideoSource] = useState<any>(null);
+
+  // Video sources are resolved in a shared utility to keep imports static
 
   const player = useVideoPlayer(videoSource, player => {
     player.loop = true;
     player.play();
   });
 
-  const modules: Module[] = [
-    {
-      id: "quiz",
-      title: "Food Quest",
-      icon: require("../../../../assets/images/characters/zicon (40).png"),
-      description: "Embark on an exciting journey through food knowledge with interactive quizzes and challenges.",
-      action: "Start Quest",
-      color: colors.success,
-      gradient: [colors.success, "#45A049"],
-      progress: 75,
-      isUnlocked: true,
-      category: "interactive",
-    },
-    {
-      id: "rewards",
-      title: "Achievement Hall",
-      icon: require("../../../../assets/images/characters/zicon (24).png"),
-      description: "Celebrate your accomplishments and collect badges for your food knowledge mastery.",
-      action: "View Achievements",
-      color: colors.warning,
-      gradient: [colors.warning, "#F57C00"],
-      progress: 60,
-      isUnlocked: true,
-      category: "rewards",
-    },
-    {
-      id: "learning",
-      title: "Knowledge Library",
-      icon: require("../../../../assets/images/characters/learn.png"),
-      description: "Access comprehensive learning materials and educational content about healthy eating.",
-      action: "Explore Library",
-      color: colors.primary,
-      gradient: [colors.primary, "#1976D2"],
-      progress: 30,
-      isUnlocked: true,
-      category: "education",
-    },
-    {
-      id: "challenges",
-      title: "Daily Challenges",
-      icon: require("../../../../assets/images/characters/fire.png"),
-      description: "Take on daily food challenges to keep your knowledge fresh and earn bonus rewards.",
-      action: "View Challenges",
-      color: colors.error,
-      gradient: [colors.error, "#C2185B"],
-      progress: 0,
-      isUnlocked: true,
-      category: "challenges",
-    },
-  ];
+  // const modules: Module[] = [
+  //   {
+  //     id: "quiz",
+  //     title: "Food Quest",
+  //     icon: require("../../../../assets/images/characters/zicon (40).png"),
+  //     description: "Embark on an exciting journey through food knowledge with interactive quizzes and challenges.",
+  //     action: "Start Quest",
+  //     color: colors.success,
+  //     gradient: [colors.success, "#45A049"],
+  //     progress: 75,
+  //     isUnlocked: true,
+  //     category: "interactive",
+  //   },
+  //   {
+  //     id: "rewards",
+  //     title: "Achievement Hall",
+  //     icon: require("../../../../assets/images/characters/zicon (24).png"),
+  //     description: "Celebrate your accomplishments and collect badges for your food knowledge mastery.",
+  //     action: "View Achievements",
+  //     color: colors.warning,
+  //     gradient: [colors.warning, "#F57C00"],
+  //     progress: 60,
+  //     isUnlocked: true,
+  //     category: "rewards",
+  //   },
+  //   {
+  //     id: "learning",
+  //     title: "Knowledge Library",
+  //     icon: require("../../../../assets/images/characters/learn.png"),
+  //     description: "Access comprehensive learning materials and educational content about healthy eating.",
+  //     action: "Explore Library",
+  //     color: colors.primary,
+  //     gradient: [colors.primary, "#1976D2"],
+  //     progress: 30,
+  //     isUnlocked: true,
+  //     category: "education",
+  //   },
+  //   {
+  //     id: "challenges",
+  //     title: "Daily Challenges",
+  //     icon: require("../../../../assets/images/characters/fire.png"),
+  //     description: "Take on daily food challenges to keep your knowledge fresh and earn bonus rewards.",
+  //     action: "View Challenges",
+  //     color: colors.error,
+  //     gradient: [colors.error, "#C2185B"],
+  //     progress: 0,
+  //     isUnlocked: true,
+  //     category: "challenges",
+  //   },
+  // ];
 
   // Generate videos from food data
   const generateVideosFromFoods = (): VideoData[] => {
@@ -148,62 +150,62 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
     
     // Fruits video
     const fruits = foodGuideData.categories?.fruits?.foods ? Object.keys(foodGuideData.categories.fruits.foods).slice(0, 5) : [];
-    videos.push({
-      id: "fruits",
-      title: "Fruits & Berries",
-      duration: "8 Min",
-      thumbnail: "🍓",
-      color: "#FF6B6B",
-      category: "Nutrition Basics",
-      isPremium: false,
-      videoSource: require("../../../../assets/videos/fruits.mp4"),
-      description: "Learn about different types of fruits and their nutritional benefits",
-      foodItems: fruits,
-    });
+    // videos.push({
+    //   id: "fruits",
+    //   title: "Fruits & Berries",
+    //   duration: "8 Min",
+    //   thumbnail: "🍓",
+    //   color: "#FF6B6B",
+    //   category: "Nutrition Basics",
+    //   isPremium: false,
+    //   videoSource: require("../../../../assets/videos/fruits.mp4"),
+    //   description: "Learn about different types of fruits and their nutritional benefits",
+    //   foodItems: fruits,
+    // });
 
-    // Vegetables video
-    const vegetables = foodGuideData.categories?.vegetables?.foods ? Object.keys(foodGuideData.categories.vegetables.foods).slice(0, 5) : [];
-    videos.push({
-      id: "vegetables",
-      title: "Veggie Power",
-      duration: "10 Min",
-      thumbnail: "🥦",
-      color: "#4CAF50",
-      category: "Plant Nutrition",
-      isPremium: false,
-      videoSource: require("../../../../assets/videos/vegetables.mp4"),
-      description: "Discover the amazing world of vegetables and their health benefits",
-      foodItems: vegetables,
-    });
+    // // Vegetables video
+    // const vegetables = foodGuideData.categories?.vegetables?.foods ? Object.keys(foodGuideData.categories.vegetables.foods).slice(0, 5) : [];
+    // videos.push({
+    //   id: "vegetables",
+    //   title: "Veggie Power",
+    //   duration: "10 Min",
+    //   thumbnail: "🥦",
+    //   color: "#4CAF50",
+    //   category: "Plant Nutrition",
+    //   isPremium: false,
+    //   videoSource: require("../../../../assets/videos/vegetables.mp4"),
+    //   description: "Discover the amazing world of vegetables and their health benefits",
+    //   foodItems: vegetables,
+    // });
 
-    // Proteins video
-    const proteins = foodGuideData.categories?.proteins?.foods ? Object.keys(foodGuideData.categories.proteins.foods).slice(0, 5) : [];
-    videos.push({
-      id: "proteins",
-      title: "Protein Power",
-      duration: "12 Min",
-      thumbnail: "🥩",
-      color: "#45B7D1",
-      category: "Building Blocks",
-      isPremium: true,
-      videoSource: require("../../../../assets/videos/proteins.mp4"),
-      description: "Understanding protein sources and their importance",
-      foodItems: proteins,
-    });
+    // // Proteins video
+    // const proteins = foodGuideData.categories?.proteins?.foods ? Object.keys(foodGuideData.categories.proteins.foods).slice(0, 5) : [];
+    // videos.push({
+    //   id: "proteins",
+    //   title: "Protein Power",
+    //   duration: "12 Min",
+    //   thumbnail: "🥩",
+    //   color: "#45B7D1",
+    //   category: "Building Blocks",
+    //   isPremium: true,
+    //   videoSource: require("../../../../assets/videos/proteins.mp4"),
+    //   description: "Understanding protein sources and their importance",
+    //   foodItems: proteins,
+    // });
 
-    // Dairy video
-    videos.push({
-      id: "dairy",
-      title: "Dairy Delights",
-      duration: "9 Min",
-      thumbnail: "🥛",
-      color: "#9C27B0",
-      category: "Calcium & Vitamins",
-      isPremium: true,
-      videoSource: require("../../../../assets/videos/dairy.mp4"),
-      description: "Learn about dairy products and their nutritional value",
-      foodItems: ["milk", "cheese", "yogurt"],
-    });
+    // // Dairy video
+    // videos.push({
+    //   id: "dairy",
+    //   title: "Dairy Delights",
+    //   duration: "9 Min",
+    //   thumbnail: "🥛",
+    //   color: "#9C27B0",
+    //   category: "Calcium & Vitamins",
+    //   isPremium: true,
+    //   videoSource: require("../../../../assets/videos/dairy.mp4"),
+    //   description: "Learn about dairy products and their nutritional value",
+    //   foodItems: ["milk", "cheese", "yogurt"],
+    // });
 
     return videos;
   };
@@ -311,6 +313,42 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
     setShowFoodDetails(true);
   };
 
+  // Play food video using path from foods.json
+  const handlePlayFoodVideo = (food: FoodItem): void => {
+    try {
+      const categoryKey = food.category as keyof typeof foodGuideData.categories;
+      const categoryObj = foodGuideData.categories?.[categoryKey] as any;
+      const videoPath: string | undefined = categoryObj?.foods?.[food.id]?.video;
+      if (!videoPath) {
+        Alert.alert('No Video', 'Video not available for this food.');
+        return;
+      }
+      // Resolve via shared video utils
+      const normalized = videoPath.replace(/^\.\/+/, '');
+      const requiredSource = getFoodVideoSource(normalized);
+      if (!requiredSource) {
+        Alert.alert('No Video', 'Video asset not found for this food.');
+        return;
+      }
+      setSelectedVideo({
+        id: food.id,
+        title: food.name,
+        duration: '',
+        thumbnail: '',
+        color: colors.primary,
+        category: food.category,
+        isPremium: false,
+        videoSource: requiredSource,
+        description: '',
+        foodItems: [],
+      });
+      setVideoSource(requiredSource as any);
+      setShowVideoModal(true);
+    } catch (e) {
+      Alert.alert('Playback Error', 'Could not load the video for this food.');
+    }
+  };
+
   const getFoodImage = (foodName: string) => {
     return getFoodImageSource(foodName);
   };
@@ -406,7 +444,9 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
         </View>
         {selectedFood && (
           <ScrollView style={styles.foodDetailsContent}>
-            <Image source={getFoodImage(selectedFood.id)} style={styles.foodDetailImage} />
+            <TouchableOpacity onPress={() => handlePlayFoodVideo(selectedFood)} activeOpacity={0.8}>
+              <Image source={getFoodImage(selectedFood.id)} style={styles.foodDetailImage} />
+            </TouchableOpacity>
             <Text style={styles.foodDetailName}>{selectedFood.name}</Text>
             <Text style={styles.foodDetailDescription}>{selectedFood.description}</Text>
             
@@ -480,7 +520,7 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
 
-      <Animated.View entering={FadeInUp.delay(300)}>
+      {/* <Animated.View entering={FadeInUp.delay(300)}>
         <Text style={styles.sectionTitle}>Learning Videos</Text>
         <Text style={styles.sectionSubtitle}>
           Watch educational videos about different food categories
@@ -510,7 +550,7 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
             </View>
           </TouchableOpacity>
         </Animated.View>
-      ))}
+      ))} */}
 
       <Animated.View entering={FadeInUp.delay(400)}>
         <Text style={styles.sectionTitle}>Food Knowledge Library</Text>
