@@ -295,8 +295,34 @@ const MealTrackingScreen = ({ navigation }: { navigation: NavigationProps }) => 
   const { profile, selectedChildId } = useUserStore();
   const { addMeal, meals, getMeal } = useMealStore();
   useEffect(() => {
-    getMeal();
-  }, []);
+    console.log('Tracking - Initial load effect, selectedChildId:', selectedChildId);
+    if (selectedChildId) {
+      console.log('Tracking - Initial load calling getMeal with childId:', selectedChildId);
+      getMeal(selectedChildId);
+    }
+  }, []); // Only run on mount
+
+  // Effect for when selectedChildId changes
+  useEffect(() => {
+    if (selectedChildId) {
+      getMeal(selectedChildId);
+    }
+  }, [selectedChildId]); // Only depend on selectedChildId, not getMeal
+  
+  // Reset tracking state when switching children
+  useEffect(() => {
+    setSelectedMealType('breakfast');
+    setSelectedFoods([]);
+    setMealData({
+      breakfast: { mealTime: '8:00 AM', foods: [] },
+      lunch: { mealTime: '12:00 PM', foods: [] },
+      dinner: { mealTime: '6:00 PM', foods: [] },
+      snack: { mealTime: '3:00 PM', foods: [] }
+    });
+    setCompletedMeals(new Set());
+    setSearchQuery('');
+  }, [selectedChildId]);
+  
   console.log('selectedChildId1: >>--->', meals);
 
   const childProfile = (profile as any)?.data?.user?.children || profile?.children;
@@ -846,7 +872,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
     paddingBottom: 15,
     paddingTop: 13,
-    marginBottom: 27,
+    marginBottom: 140,
     marginTop: 5,
     flexDirection: 'row',
     alignItems: 'center',

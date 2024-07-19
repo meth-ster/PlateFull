@@ -3,7 +3,7 @@ import foodGuideData from '@/db/food_guide_json.json';
 import { useUserStore } from '@/stores/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -30,6 +30,14 @@ const FoodLearn = () => {
   const allowedFruits = selectedChild.fruits || [];
   const allowedVegetables = selectedChild.vegetables || [];
   const allowedProteins = selectedChild.proteins || [];
+
+  // Reset selected category and food data when switching children
+  useEffect(() => {
+    console.log('FoodLearn - selectedChildId changed to:', selectedChildId);
+    setSelectedCategory('all');
+    setShowLearnFoods(false);
+    setSelectedFoodData(null);
+  }, [selectedChildId]);
 
   const getAllFoods = () => {
     const foods: { name: string; category: string; description: string }[] = [];
@@ -103,7 +111,7 @@ const FoodLearn = () => {
       };
     }
     
-         if (foodData) {
+    if (foodData) {
        setSelectedFoodData(foodData);
        setShowLearnFoods(true);
      }
@@ -283,8 +291,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   foodImage: {
-    width: 50,
-    height: 50,
+    width: 45,
+    height: 45,
     borderRadius: 10,
     marginRight: 15,
   },

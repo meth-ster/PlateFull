@@ -42,8 +42,9 @@ export interface MealState {
 }
 
 export interface MealActions {
-  getMeal: () => Promise<void>;
+  getMeal: (childId?: string) => Promise<void>;
   addMeal: (mealData: Omit<MealEntry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  recordMeal: (mealData: any) => Promise<any>;
   updateMeal: (mealId: string, mealData: Partial<MealEntry>) => Promise<void>;
   removeMeal: (mealId: string) => Promise<void>;
   getMealsByDate: (date: string, childId?: string) => MealEntry[];
@@ -67,8 +68,10 @@ export const useMealStore = create<MealStore>((set, get) => ({
   isLoading: false,
   error: null,
 
-  getMeal: async () => {
-    const result = await apiService.getMeals();
+  getMeal: async (childId?: string) => {
+    if (!childId) return;
+    const result = await apiService.getMeals(childId);
+    console.log('MealStore - API result:', result);
     set({ meals: result.data, isLoading: false });
   },
 
@@ -81,6 +84,20 @@ export const useMealStore = create<MealStore>((set, get) => ({
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to add meal',
+        isLoading: false,
+      });
+    }
+  },
+
+  recordMeal: async (mealData: any) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await apiService.recordMeal(mealData);
+      set({ meals: [...get().meals, result.data], isLoading: false });
+      return result.data;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to record meal',
         isLoading: false,
       });
     }
