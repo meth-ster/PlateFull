@@ -127,6 +127,5 @@ export const colors = {
     accent: ['#FFE66D', '#F4D03F'] as const,
     success: ['#4CAF50', '#45A049'] as const,
     food: ['#FF8A80', '#FF5722'] as const,
-    white: ['#FFFFFF1A', '#FFFFFF80', '#FFFFFF1A'] as const,
   },
 }; 
