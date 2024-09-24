@@ -3,20 +3,20 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Animated, {
-    FadeIn,
-    FadeOut,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring
 } from 'react-native-reanimated';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -617,8 +617,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   foodImageContainer: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
     borderRadius: 16,
     backgroundColor: colors.surface,
     justifyContent: 'center',
