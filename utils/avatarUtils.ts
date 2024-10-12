@@ -18,7 +18,7 @@ export const getAvatarSource = (child: any, avatarLoadErrors: Set<string> = new 
     if (child.avatar && typeof child.avatar === 'string') {
       // If avatar is a backend filename (e.g., "86bc4690-5d7b-4d4c-98b0-1401b680908a.jpeg")
       if (child.avatar.includes('.') && !child.avatar.startsWith('http')) {
-        const avatarUri = `http://localhost:5000/uploads/avatars/${child.avatar}`;
+        const avatarUri = `http://plateful.info//uploads/avatars/${child.avatar}`;
         return { uri: avatarUri };
       }
       // If avatar is already a full URL
