@@ -18,7 +18,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import PhoneInput from '../../components/common/PhoneInput';
 import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -81,7 +81,7 @@ const SignUpScreen: React.FC = () => {
       
       // Navigate to OTP verification with consistent absolute path
       router.push({
-        pathname: '/auth/otp',
+        pathname: './auth/otp',
         params: { 
           phoneNumber: formData.phoneNumber,
           isSignUp: 'true' 
@@ -197,7 +197,7 @@ const SignUpScreen: React.FC = () => {
             
             <View style={styles.signInContainer}>
               <Text style={styles.signInText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/auth/sign-in')}>
+              <TouchableOpacity onPress={() => router.push('./auth/sign-in')}>
                 <Text style={styles.signInLink}>Sign In</Text>
               </TouchableOpacity>
             </View>

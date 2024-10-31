@@ -14,7 +14,7 @@ import Animated, {
   useSharedValue,
   withTiming
 } from 'react-native-reanimated';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 
 interface InputProps extends TextInputProps {
   label?: string;

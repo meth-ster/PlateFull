@@ -3,16 +3,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -34,18 +34,18 @@ const ChildProfileScreen = () => {
   ]);
 
   const handleAddChild = () => {
-    router.push('/profile/setup');
+    router.push('./profile/setup');
   };
 
   const handleEditChild = (childId: string) => {
     router.push({
-      pathname: '/profile/setup',
+      pathname: './profile/setup',
       params: { childId }
     });
   };
 
   const handleNext = () => {
-    router.push('/main');
+    router.push('./main');
   };
 
   return (

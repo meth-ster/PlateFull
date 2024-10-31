@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import Button from '../../components/common/Button';
 import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -102,7 +102,7 @@ const OtpScreen: React.FC = () => {
       
       // Navigate to verification success with consistent absolute path
       router.push({
-        pathname: '/auth/verification-success',
+        pathname: './auth/verification-success',
         params: { isSignUp: isSignUp === 'true' ? 'true' : 'false' }
       });
     } catch (error) {
@@ -144,7 +144,7 @@ const OtpScreen: React.FC = () => {
             } catch (error) {
               console.error('Back navigation error:', error);
               // Fallback to sign-up if back fails
-              router.push('/auth/sign-up');
+              router.push('./auth/sign-up');
             }
           }}
         >
@@ -245,7 +245,7 @@ const OtpScreen: React.FC = () => {
                 } catch (error) {
                   console.error('Back navigation error:', error);
                   // Fallback to sign-up if back fails
-                  router.push('/auth/sign-up');
+                  router.push('./auth/sign-up');
                 }
               }}>
                 <Text style={styles.linkText}>Change it</Text>

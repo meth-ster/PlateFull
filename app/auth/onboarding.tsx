@@ -1,29 +1,29 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Animated, {
-    Extrapolate,
-    interpolate,
-    SharedValue,
-    useAnimatedScrollHandler,
-    useAnimatedStyle,
-    useSharedValue,
-    withRepeat,
-    withSpring,
-    withTiming
+  Extrapolate,
+  interpolate,
+  SharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
 import Button from '../../components/common/Button';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -114,6 +114,7 @@ const PaginationDot: React.FC<PaginationDotProps> = ({ index, scrollX }) => {
 };
 
 const OnboardingScreen: React.FC = () => {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -138,12 +139,12 @@ const OnboardingScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem('onboardingComplete', 'true');
       if (router && router.replace) {
-        router.replace('/auth/sign-in');
+        router.replace('./auth/sign-in');
       }
     } catch (error) {
       console.error('Error saving onboarding completion:', error);
       if (router && router.replace) {
-        router.replace('/auth/sign-in');
+        router.replace('./auth/sign-in');
       }
     }
   }, []);
@@ -194,12 +195,12 @@ const OnboardingScreen: React.FC = () => {
       try {
         await AsyncStorage.setItem('onboardingComplete', 'true');
         if (router && router.replace) {
-          router.replace('/auth/sign-in');
+          router.replace('./auth/sign-in');
         }
       } catch (error) {
         console.error('Error saving onboarding completion:', error);
         if (router && router.replace) {
-          router.replace('/auth/sign-in');
+          router.replace('./auth/sign-in');
         }
       }
     }
@@ -209,12 +210,12 @@ const OnboardingScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem('onboardingComplete', 'true');
       if (router && router.replace) {
-        router.replace('/auth/sign-in');
+        router.replace('./auth/sign-in');
       }
     } catch (error) {
       console.error('Error saving onboarding completion:', error);
       if (router && router.replace) {
-        router.replace('/auth/sign-in');
+        router.replace('./auth/sign-in');
       }
     }
   }, []);

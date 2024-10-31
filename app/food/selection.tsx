@@ -1,21 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Animated, {
-    FadeInUp,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring
 } from 'react-native-reanimated';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 import { getFoodsByCategory } from '../../constants/foods';
 
 const { width } = Dimensions.get('window');
@@ -37,7 +37,7 @@ const FoodSelectionScreen = ({ route, navigation }: { route: { params: RoutePara
   
   // Get food data from database based on category
   const getCategoryData = (cat: string) => {
-    const foods = getFoodsByCategory(cat);
+    const foods = getFoodsByCategory(cat as keyof typeof getFoodsByCategory);
     const titles = {
       fats: 'What Fats have been Introduced?',
       dairy: 'What Dairy Has been Introduced?',
@@ -61,20 +61,21 @@ const FoodSelectionScreen = ({ route, navigation }: { route: { params: RoutePara
   };
 
   const handleNext = () => {
+    
     // Save selected items
-    onComplete({ [category]: selectedItems });
+    // onComplete?.(categoryData.items.map((item: any) => item.id));
     
     // Navigate to next step
     if (category === 'fats') {
       navigation.navigate('FoodSelection', {
         category: 'dairy',
-        step: step + 1,
+        step: (step || 0) + 1,
         onComplete
       });
     } else if (category === 'dairy') {
       navigation.navigate('FoodSelection', {
         category: 'proteins',
-        step: step + 1,
+        step: (step || 0) + 1,
         onComplete
       });
     } else {

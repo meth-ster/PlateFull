@@ -17,7 +17,7 @@ import Animated, {
   withSpring
 } from 'react-native-reanimated';
 import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 import { Food } from '../../constants/foods';
 import { getAllFoods } from '../../db/foods';
 

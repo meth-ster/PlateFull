@@ -21,7 +21,7 @@ import Animated, {
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 import { config } from '../../constants/config';
 
 const { width } = Dimensions.get('window');
@@ -121,7 +121,7 @@ const ProfileSetupScreen = () => {
     } else {
       // Complete setup
       if (router && router.replace) {
-        router.replace('/main');
+        router.replace('./main');
       } else {
         console.error('Router is not available');
       }

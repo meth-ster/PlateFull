@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Button from '../../components/common/Button';
 import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 import { foods, type Food } from '../../constants/foods';
 import { cameraService } from '../../utils/cameraService';
 

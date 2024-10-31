@@ -4,22 +4,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withSpring,
-    withTiming
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
-import { colors } from '../constants/Colors';
+import { colors } from '../constants/colors';
 import { NavigationService } from '../utils/navigation';
 
 const { width } = Dimensions.get('window');
@@ -77,7 +77,7 @@ const MainScreen: React.FC = () => {
   const handleLogout = async () => {
     try {
       await NavigationService.clearAuthData();
-      router.replace('/auth/sign-in');
+      router.replace('./auth/sign-in');
     } catch (error) {
       console.error('Logout error:', error);
     }

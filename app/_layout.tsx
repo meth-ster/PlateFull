@@ -33,7 +33,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="splash" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="main" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="food" options={{ headerShown: false }} />
         <Stack.Screen name="meals" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={{ headerShown: false }} />

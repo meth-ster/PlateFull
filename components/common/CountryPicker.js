@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-    FlatList,
-    Modal,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  FlatList,
+  Modal,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 import { countries, searchCountries } from '../../constants/countries';
 
 const CountryPicker = ({ 

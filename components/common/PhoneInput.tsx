@@ -5,7 +5,7 @@ import {
   TextInput,
   View
 } from 'react-native';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 import { getCountryByCode } from '../../constants/countries';
 import CountryPicker from './CountryPicker';
 

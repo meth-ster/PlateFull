@@ -15,7 +15,7 @@ import {
 import Button from '../../components/common/Button';
 import PhoneInput from '../../components/common/PhoneInput';
 import StatusBar from '../../components/common/StatusBar';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 
 const SignInScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -50,7 +50,7 @@ const SignInScreen = () => {
       }));
       
       // Navigate to main app after successful sign in
-      router.replace('/main');
+      router.replace('./main');
     } catch (error) {
       console.error('Sign in error:', error);
       setError('Invalid phone number. Please try again.');
@@ -149,7 +149,7 @@ const SignInScreen = () => {
             
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don&apos;t have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/auth/sign-up')}>
+              <TouchableOpacity onPress={() => router.push('./auth/sign-up')}>
                 <Text style={styles.signUpLink}>Sign Up</Text>
               </TouchableOpacity>
             </View>

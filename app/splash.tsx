@@ -3,21 +3,21 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
-    Dimensions,
-    Image,
-    StyleSheet,
-    Text,
-    View
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 import Animated, {
-    runOnJS,
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withSpring,
-    withTiming
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
-import { colors } from '../constants/Colors';
+import { colors } from '../constants/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -34,15 +34,15 @@ const SplashScreen: React.FC = () => {
       const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
       
       if (userToken) {
-        router.replace('/main');
+        router.replace('./(tabs)');
       } else if (onboardingComplete === 'true') {
-        router.replace('/auth/sign-in');
+        router.replace('./auth/sign-in');
       } else {
-        router.replace('/auth/onboarding');
+        router.replace('./auth/onboarding');
       }
     } catch (error) {
       console.error('Navigation error:', error);
-      router.replace('/auth/onboarding');
+      router.replace('./auth/onboarding');
     }
   };
   

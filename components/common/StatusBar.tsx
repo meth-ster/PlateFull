@@ -1,7 +1,7 @@
 import React from 'react';
 import { StatusBar as RNStatusBar, StatusBarStyle, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../constants/Colors';
+import { colors } from '../../constants/colors';
 
 interface StatusBarProps {
   backgroundColor?: string;
