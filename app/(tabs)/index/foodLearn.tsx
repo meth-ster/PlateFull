@@ -1,5 +1,5 @@
 import LearnFoods from '@/components/common/LearnFoods';
-import foodGuideData from '@/db/food_guide_json.json';
+import foodGuideData from '@/db/foods.json';
 import { useUserStore } from '@/stores/userStore';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
