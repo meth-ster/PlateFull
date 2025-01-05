@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 import {
   Dimensions,
   Image,
@@ -14,6 +15,7 @@ import { colors } from '../../constants/colors';
 import { useAuthStore } from '../../stores/authStore';
 import type { ChildProfile as StoreChildProfile } from '../../stores/userStore';
 import { useUserStore } from '../../stores/userStore';
+import { getAvatarSource } from '../../utils/avatarUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -22,18 +24,24 @@ const ChildProfileScreen = () => {
   const isFromHeader = params.fromHeader === 'true';
 
   const { profile } = useUserStore();
-  const childProfiles: StoreChildProfile[] = (profile?.children as StoreChildProfile[] | undefined) || [];
+  const childProfiles = (
+    (profile as any)?.data?.user?.children ?? profile?.children ?? []
+  ) as StoreChildProfile[];
 
   const handleAddChild = () => {
     router.replace('/profile/setup');
   };
+  
+  useEffect(() => {
+    console.log('childProfiles: >>--->', childProfiles);
+  }, []);
 
-  const handleEditChild = (childId: string) => {
-    router.replace({
-      pathname: '/profile/setup',
-      params: { childId }
-    });
-  };
+  // const handleEditChild = (childId: string) => {
+  //   router.replace({
+  //     pathname: '/profile/setup',
+  //     params: { childId }
+  //   });
+  // };
 
   const { setOnboardingComplete, setNewUser } = useAuthStore();
   
@@ -75,39 +83,42 @@ const ChildProfileScreen = () => {
                 <TouchableOpacity
                   key={child.id}
                   style={styles.childCard}
-                  onPress={() => handleEditChild(child.id)}
+                  // onPress={() => handleEditChild(child.id)}
                 >
                   <View style={styles.avatarContainer}>
-                    {child.avatar ? (
-                      // If backend provides a URL string, use Image with uri; otherwise require asset
-                      typeof child.avatar === 'string' ? (
-                        <Image source={{ uri: child.avatar }} style={styles.avatar} />
-                      ) : (
-                        <Image source={child.avatar} style={styles.avatar} />
-                      )
+                    {(child as any).avatar ? (
+                      <Image source={getAvatarSource(child)} style={styles.avatar} />
                     ) : (
-                      <View style={styles.uploadContainer}>
-                        <Ionicons name="camera" size={32} color={colors.text.secondary} />
-                        <Text style={styles.uploadText}>Upload Photo</Text>
-                      </View>
+                      <Image source={getAvatarSource("boy")} style={styles.avatar} />
                     )}
                   </View>
                   <Text style={styles.childName}>{child.name}</Text>
                   {child.ageRange && <Text style={styles.childAge}>Age: {child.ageRange}</Text>}
                 </TouchableOpacity>
               ))}
-            </View>
-          )}
-
-            <TouchableOpacity
+              <TouchableOpacity
               style={styles.addChildCard}
               onPress={handleAddChild}
-            >
+              >
               <View style={styles.addButton}>
                 <Ionicons name="add" size={40} color={colors.text.inverse} />
               </View>
               <Text style={styles.addChildText}>Add New Child's Profile</Text>
             </TouchableOpacity>
+            </View>
+          )}
+            {childProfiles.length === 0 && (
+              <TouchableOpacity
+                style={styles.addChildCard}
+                onPress={handleAddChild}
+              >
+                <View style={styles.addButton}>
+                  <Ionicons name="add" size={40} color={colors.text.inverse} />
+                </View>
+                <Text style={styles.addChildText}>Add New Child's Profile</Text>
+              </TouchableOpacity>
+            )}
+
         </ScrollView>
         
         {!isFromHeader && (
