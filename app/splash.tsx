@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -29,21 +28,22 @@ const SplashScreen: React.FC = () => {
   const loadingOpacity = useSharedValue(1);
   
   const navigateToApp = async () => {
-    try {
-      const userToken = await AsyncStorage.getItem('userToken');
-      const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
+    // try {
+    //   const userToken = await AsyncStorage.getItem('userToken');
+    //   const onboardingComplete = await AsyncStorage.getItem('onboardingComplete');
       
-      if (userToken) {
-        router.replace('./(tabs)');
-      } else if (onboardingComplete === 'true') {
-        router.replace('./auth/sign-in');
-      } else {
-        router.replace('./auth/onboarding');
-      }
-    } catch (error) {
-      console.error('Navigation error:', error);
-      router.replace('./auth/onboarding');
-    }
+    //   if (userToken) {
+    //     router.replace('/(tabs)');
+    //   } else if (onboardingComplete === 'true') {
+    //     router.replace('/auth/sign-in');
+    //   } else {
+    //     router.replace('/auth/onboarding');
+    //   }
+    // } catch (error) {
+    //   console.error('Navigation error:', error);
+    //   router.replace('/auth/onboarding');
+    // }
+    router.replace('/auth/onboarding');
   };
   
   useEffect(() => {

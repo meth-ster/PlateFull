@@ -139,12 +139,12 @@ const OnboardingScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem('onboardingComplete', 'true');
       if (router && router.replace) {
-        router.replace('./auth/sign-in');
+        router.replace('/auth/sign-in');
       }
     } catch (error) {
       console.error('Error saving onboarding completion:', error);
       if (router && router.replace) {
-        router.replace('./auth/sign-in');
+        router.replace('/auth/sign-in');
       }
     }
   }, []);
@@ -195,12 +195,12 @@ const OnboardingScreen: React.FC = () => {
       try {
         await AsyncStorage.setItem('onboardingComplete', 'true');
         if (router && router.replace) {
-          router.replace('./auth/sign-in');
+          router.replace('/auth/sign-in');
         }
       } catch (error) {
         console.error('Error saving onboarding completion:', error);
         if (router && router.replace) {
-          router.replace('./auth/sign-in');
+          router.replace('/auth/sign-in');
         }
       }
     }
@@ -210,12 +210,12 @@ const OnboardingScreen: React.FC = () => {
     try {
       await AsyncStorage.setItem('onboardingComplete', 'true');
       if (router && router.replace) {
-        router.replace('./auth/sign-in');
+        router.replace('/auth/sign-in');
       }
     } catch (error) {
       console.error('Error saving onboarding completion:', error);
       if (router && router.replace) {
-        router.replace('./auth/sign-in');
+        router.replace('/auth/sign-in');
       }
     }
   }, []);

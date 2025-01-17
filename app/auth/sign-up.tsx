@@ -80,8 +80,8 @@ const SignUpScreen: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Navigate to OTP verification with consistent absolute path
-      router.push({
-        pathname: './auth/otp',
+      router.replace({
+        pathname: '/auth/otp',
         params: { 
           phoneNumber: formData.phoneNumber,
           isSignUp: 'true' 
@@ -197,7 +197,7 @@ const SignUpScreen: React.FC = () => {
             
             <View style={styles.signInContainer}>
               <Text style={styles.signInText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('./auth/sign-in')}>
+              <TouchableOpacity onPress={() => router.replace('/auth/sign-in')}>
                 <Text style={styles.signInLink}>Sign In</Text>
               </TouchableOpacity>
             </View>

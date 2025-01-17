@@ -121,7 +121,7 @@ const ProfileSetupScreen = () => {
     } else {
       // Complete setup
       if (router && router.replace) {
-        router.replace('./main');
+        router.replace('/(tabs)');
       } else {
         console.error('Router is not available');
       }

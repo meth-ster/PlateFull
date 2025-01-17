@@ -41,9 +41,9 @@ const VerificationSuccessScreen = () => {
     const timer = setTimeout(() => {
       try {
         if (isSignUp === 'true') {
-          router.push('./profile/child-profile');
+          router.replace('/profile/child-profile');
         } else {
-          router.push('./(tabs)');
+          router.replace('/(tabs)');
         }
       } catch (error) {
         console.error('Auto navigation error:', error);
@@ -56,9 +56,9 @@ const VerificationSuccessScreen = () => {
   const handleContinue = () => {
     try {
       if (isSignUp === 'true') {
-        router.push('./profile/child-profile');
+        router.replace('/profile/child-profile');
       } else {
-        router.push('./(tabs)');
+        router.replace('/(tabs)');
       }
     } catch (error) {
       console.error('Navigation error:', error);
@@ -137,7 +137,7 @@ const VerificationSuccessScreen = () => {
             style={styles.skipButton}
             onPress={() => {
               try {
-                router.push('./(tabs)');
+                router.replace('/(tabs)');
               } catch (error) {
                 console.error('Skip navigation error:', error);
               }

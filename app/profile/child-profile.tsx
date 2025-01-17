@@ -34,18 +34,18 @@ const ChildProfileScreen = () => {
   ]);
 
   const handleAddChild = () => {
-    router.push('./profile/setup');
+    router.replace('/profile/setup');
   };
 
   const handleEditChild = (childId: string) => {
-    router.push({
+    router.replace({
       pathname: './profile/setup',
       params: { childId }
     });
   };
 
   const handleNext = () => {
-    router.push('./main');
+    router.replace('/(tabs)');
   };
 
   return (
