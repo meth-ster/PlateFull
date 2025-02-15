@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -13,30 +14,55 @@ import {
   View
 } from 'react-native';
 import Button from '../../components/common/Button';
-import PhoneInput from '../../components/common/PhoneInput';
+import Input from '../../components/common/Input';
 import StatusBar from '../../components/common/StatusBar';
 import { colors } from '../../constants/colors';
 
+interface FormData {
+  email: string;
+  password: string;
+}
+
+interface FormErrors {
+  password?: string;
+  email?: string;
+}
+
 const SignInScreen = () => {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState<FormData>({
+    email: '',
+    password: '',
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   
-  const handleSignIn = async () => {
-    if (!phoneNumber || !phoneNumber.trim()) {
-      setError('Phone number is required');
-      return;
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+  
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+
+    // Password validation
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
     
-    // Remove the country code to get just the number
-    const phoneWithoutCode = phoneNumber.replace(/^\+\d{1,4}/, '');
-    if (phoneWithoutCode.length < 7) {
-      setError('Please enter a valid phone number');
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSignIn = async () => {
+    if (!validateForm()) {
       return;
     }
     
     setLoading(true);
-    setError('');
     
     try {
       // Simulate API call
@@ -45,15 +71,15 @@ const SignInScreen = () => {
       // Save user token and data
       await AsyncStorage.setItem('userToken', 'dummy-token');
       await AsyncStorage.setItem('userData', JSON.stringify({
-        name: 'User', // Default name for phone-based sign in
-        phoneNumber: phoneNumber
+        name: 'User',
+        email: formData.email
       }));
       
       // Navigate to main app after successful sign in
-      router.replace('/(tabs)');
+      router.replace('/(tabs)' as any);
     } catch (error) {
       console.error('Sign in error:', error);
-      setError('Invalid phone number. Please try again.');
+      setErrors({ email: 'Invalid email or password. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -65,6 +91,13 @@ const SignInScreen = () => {
       console.log('Google Sign In');
     } catch (error) {
       console.error('Google sign in error:', error);
+    }
+  };
+  
+  const updateFormData = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
   
@@ -99,16 +132,23 @@ const SignInScreen = () => {
           </View>
           
           <View style={styles.form}>
-            <PhoneInput
-              value={phoneNumber}
-              onChangeText={(text: string) => {
-                setPhoneNumber(text);
-                if (error) setError('');
-              }}
-              placeholder="Enter your phone number"
-              error={error}
-              style={{}}
-              containerStyle={{}}
+            <Input
+              value={formData.email}
+              onChangeText={(text) => updateFormData('email', text)}
+              placeholder="Enter your email"
+              keyboardType="email-address"
+              icon={<Ionicons name="mail-outline" />}
+              error={errors.email}
+            />
+
+            <Input
+              value={formData.password}
+              onChangeText={(text) => updateFormData('password', text)}
+              placeholder="Enter your password"
+              keyboardType="default"
+              secureTextEntry={true}
+              icon={<Ionicons name="lock-closed-outline" />}
+              error={errors.password}
             />
             
             <Button
@@ -127,21 +167,21 @@ const SignInScreen = () => {
             
             <View style={styles.dividerContainer}>
               <View style={styles.divider} />
-              <Text style={styles.dividerText}>Or</Text>
+              <Text style={styles.dividerText}>Or continue with</Text>
               <View style={styles.divider} />
             </View>
             
-            <Button
-              title="Log in with Google"
+            <TouchableOpacity
+              style={styles.googleButton}
               onPress={handleGoogleSignIn}
-              variant="google"
-              icon={
-                <Image 
-                  source={require('../../assets/images/icons/google.png')}
-                  style={styles.googleIcon}
-                />
-              }
-            />
+              activeOpacity={0.8}
+            >
+              <Image 
+                source={require('../../assets/images/icons/google.png')}
+                style={styles.googleIcon}
+              />
+              <Text style={styles.googleButtonText}>Log in with Google</Text>
+            </TouchableOpacity>
             
             <View style={styles.footer}>
               <Text style={styles.footerText}>By continuing, you agree to our Terms of Service and Privacy Policy</Text>
@@ -214,10 +254,11 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
+    gap: 6,
   },
   signInButton: {
-    marginTop: 24,
-    marginBottom: 24,
+    marginTop: 8,
+    marginBottom: 8,
   },
   signUpButton: {
     marginTop: 24,
@@ -226,7 +267,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 20,
   },
   divider: {
     flex: 1,
@@ -238,16 +279,34 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginHorizontal: 16,
   },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+  },
   googleIcon: {
     width: 24,
     height: 24,
     resizeMode: 'contain',
+    marginRight: 12,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 24,
   },
   footerText: {
     fontSize: 12,
@@ -264,7 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 20,
   },
   signUpText: {
     fontSize: 14,

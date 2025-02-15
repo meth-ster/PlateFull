@@ -39,13 +39,13 @@ const ChildProfileScreen = () => {
 
   const handleEditChild = (childId: string) => {
     router.replace({
-      pathname: './profile/setup',
+      pathname: '/profile/setup',
       params: { childId }
     });
   };
 
   const handleNext = () => {
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/index');
   };
 
   return (
