@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -13,28 +12,17 @@ import {
 } from 'react-native';
 import { colors } from '../../constants/colors';
 import { useAuthStore } from '../../stores/authStore';
+import type { ChildProfile as StoreChildProfile } from '../../stores/userStore';
+import { useUserStore } from '../../stores/userStore';
 
 const { width } = Dimensions.get('window');
-
-interface ChildProfile {
-  id: string;
-  name: string;
-  age: string;
-  avatar?: any;
-}
 
 const ChildProfileScreen = () => {
   const params = useLocalSearchParams();
   const isFromHeader = params.fromHeader === 'true';
-  
-  const [childProfiles, setChildProfiles] = useState<ChildProfile[]>([
-    {
-      id: '1',
-      name: 'Johnny',
-      age: '4yrs',
-      avatar: require('../../assets/images/avatars/boy.png')
-    }
-  ]);
+
+  const { profile } = useUserStore();
+  const childProfiles: StoreChildProfile[] = (profile?.children as StoreChildProfile[] | undefined) || [];
 
   const handleAddChild = () => {
     router.replace('/profile/setup');
@@ -81,28 +69,36 @@ const ChildProfileScreen = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <View style={styles.profileGrid}>
-            {childProfiles.map((child, index) => (
-              <TouchableOpacity
-                key={child.id}
-                style={styles.childCard}
-                onPress={() => handleEditChild(child.id)}
-              >
-                <View style={styles.avatarContainer}>
-                  {child.avatar ? (
-                    <Image source={child.avatar} style={styles.avatar} />
-                  ) : (
-                    <View style={styles.uploadContainer}>
-                      <Ionicons name="camera" size={32} color={colors.text.secondary} />
-                      <Text style={styles.uploadText}>Upload Photo</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.childName}>{child.name}</Text>
-                <Text style={styles.childAge}>Age: {child.age}</Text>
-              </TouchableOpacity>
-            ))}
-            
+          {childProfiles.length > 0 && (
+            <View style={styles.profileGrid}>
+              {childProfiles.map((child) => (
+                <TouchableOpacity
+                  key={child.id}
+                  style={styles.childCard}
+                  onPress={() => handleEditChild(child.id)}
+                >
+                  <View style={styles.avatarContainer}>
+                    {child.avatar ? (
+                      // If backend provides a URL string, use Image with uri; otherwise require asset
+                      typeof child.avatar === 'string' ? (
+                        <Image source={{ uri: child.avatar }} style={styles.avatar} />
+                      ) : (
+                        <Image source={child.avatar} style={styles.avatar} />
+                      )
+                    ) : (
+                      <View style={styles.uploadContainer}>
+                        <Ionicons name="camera" size={32} color={colors.text.secondary} />
+                        <Text style={styles.uploadText}>Upload Photo</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.childName}>{child.name}</Text>
+                  {child.ageRange && <Text style={styles.childAge}>Age: {child.ageRange}</Text>}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
             <TouchableOpacity
               style={styles.addChildCard}
               onPress={handleAddChild}
@@ -112,7 +108,6 @@ const ChildProfileScreen = () => {
               </View>
               <Text style={styles.addChildText}>Add New Child's Profile</Text>
             </TouchableOpacity>
-          </View>
         </ScrollView>
         
         {!isFromHeader && (

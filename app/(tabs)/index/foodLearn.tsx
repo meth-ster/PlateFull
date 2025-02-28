@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Dimensions,
+  FlatList,
   Image,
   ScrollView,
   StyleSheet,
@@ -17,11 +18,20 @@ import { colors } from '../../../constants/colors';
 import { getFoodImageSource } from '../../../utils/imageUtils';
 
 const { width } = Dimensions.get('window');
+const MIN_ITEM_WIDTH = 150;
+const GUTTER = 12;
 
 const FoodLearn = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showLearnFoods, setShowLearnFoods] = useState(false);
   const [selectedFoodData, setSelectedFoodData] = useState<any>(null);
+  const [numColumns, setNumColumns] = useState(2);
+  const [itemCardWidth, setItemCardWidth] = useState<number>(() => {
+    const contentPadding = 40; // styles.content paddingHorizontal = 20 each side
+    const available = width - contentPadding;
+    const initialColumns = Math.max(1, Math.floor((available + GUTTER) / (MIN_ITEM_WIDTH + GUTTER)));
+    return Math.floor((available - (initialColumns - 1) * GUTTER) / initialColumns);
+  });
   const { profile, selectedChildId } = useUserStore();
 
   const childProfile = (profile as any)?.data?.user?.children || profile?.children;
@@ -40,43 +50,55 @@ const FoodLearn = () => {
   }, [selectedChildId]);
 
   const getAllFoods = () => {
-    const foods: { name: string; category: string; description: string }[] = [];
+    const foods: { name: string; category: string; summary: string; key_facts: string[]; key: string }[] = [];
     
     // Only add fruits that are in the allowedFruits array
-    Object.keys(foodGuideData.fruits).forEach(fruitName => {
-      if (allowedFruits.includes(fruitName)) {
-        const fruitData = foodGuideData.fruits[fruitName as keyof typeof foodGuideData.fruits];
-        foods.push({
-          name: fruitName,
-          category: 'fruits',
-          description: fruitData.description,
-        });
-      }
-    });
+    if (foodGuideData.categories?.fruits?.foods) {
+      Object.keys(foodGuideData.categories.fruits.foods).forEach(fruitName => {
+        if (allowedFruits.includes(fruitName)) {
+          const fruitData = foodGuideData.categories.fruits.foods[fruitName as keyof typeof foodGuideData.categories.fruits.foods];
+          foods.push({
+            name: fruitData.name || fruitName,
+            category: 'fruits',
+            summary: fruitData.learning?.summary || '',
+            key_facts: fruitData.learning?.key_facts || [],
+            key: fruitName, // Store the original key for lookup
+          });
+        }
+      });
+    }
 
     // Only add vegetables that are in the allowedVegetables array
-    Object.keys(foodGuideData.vegetables).forEach(vegName => {
-      if (allowedVegetables.includes(vegName)) {
-        const vegData = foodGuideData.vegetables[vegName as keyof typeof foodGuideData.vegetables];
-        foods.push({
-          name: vegName,
-          category: 'vegetables',
-          description: vegData.description,
-        });
-      }
-    });
+    if (foodGuideData.categories?.vegetables?.foods) {
+      Object.keys(foodGuideData.categories.vegetables.foods).forEach(vegName => {
+        if (allowedVegetables.includes(vegName)) {
+          const vegData = foodGuideData.categories.vegetables.foods[vegName as keyof typeof foodGuideData.categories.vegetables.foods];
+          foods.push({
+            name: vegData.name || vegName,
+            category: 'vegetables',
+            summary: vegData.learning?.summary || '',
+            key_facts: vegData.learning?.key_facts || [],
+            key: vegName, // Store the original key for lookup
+          });
+        }
+      });
+    }
 
     // Only add proteins that are in the allowedProteins array
-    Object.keys(foodGuideData.proteins).forEach(proteinName => {
-      if (allowedProteins.includes(proteinName)) {
-        const proteinData = foodGuideData.proteins[proteinName as keyof typeof foodGuideData.proteins];
-        foods.push({
-          name: proteinName,
-          category: 'proteins',
-          description: proteinData.description,
-        });
-      }
-    });
+    if (foodGuideData.categories?.proteins?.foods) {
+      Object.keys(foodGuideData.categories.proteins.foods).forEach(proteinName => {
+        if (allowedProteins.includes(proteinName)) {
+          const proteinData = foodGuideData.categories.proteins.foods[proteinName as keyof typeof foodGuideData.categories.proteins.foods];
+          foods.push({
+            name: proteinData.name || proteinName,
+            category: 'proteins',
+            summary: proteinData.learning?.summary || '',
+            key_facts: proteinData.learning?.key_facts || [],
+            key: proteinName, // Store the original key for lookup
+          });
+        }
+      });
+    }
 
     return foods;
   };
@@ -90,30 +112,45 @@ const FoodLearn = () => {
     return food.category === selectedCategory;
   });
 
-  const handleFoodPress = (foodName: string, category: string) => {
+  console.log('FoodLearn - filteredFoods:', filteredFoods);
+
+  const handleFoodPress = (foodKey: string, category: string) => {
+    console.log('FoodLearn - handleFoodPress called with:', { foodKey, category });
     // Get food data from the JSON file
     let foodData = null;
     
-    if (category === 'fruits' && foodGuideData.fruits[foodName as keyof typeof foodGuideData.fruits]) {
+    if (category === 'fruits' && foodGuideData.categories?.fruits?.foods?.[foodKey as keyof typeof foodGuideData.categories.fruits.foods]) {
+      const fruitData = foodGuideData.categories.fruits.foods[foodKey as keyof typeof foodGuideData.categories.fruits.foods];
       foodData = {
-        name: foodName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        ...foodGuideData.fruits[foodName as keyof typeof foodGuideData.fruits]
+        name: fruitData.name || foodKey.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+        summary: fruitData.learning?.summary || '',
+        key_facts: fruitData.learning?.key_facts || [],
+        key: foodKey,
       };
-    } else if (category === 'vegetables' && foodGuideData.vegetables[foodName as keyof typeof foodGuideData.vegetables]) {
+    } else if (category === 'vegetables' && foodGuideData.categories?.vegetables?.foods?.[foodKey as keyof typeof foodGuideData.categories.vegetables.foods]) {
+      const vegData = foodGuideData.categories.vegetables.foods[foodKey as keyof typeof foodGuideData.categories.vegetables.foods];
       foodData = {
-        name: foodName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        ...foodGuideData.vegetables[foodName as keyof typeof foodGuideData.vegetables]
+        name: vegData.name || foodKey.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+        summary: vegData.learning?.summary || '',
+        key_facts: vegData.learning?.key_facts || [],
+        key: foodKey,
       };
-    } else if (category === 'proteins' && foodGuideData.proteins[foodName as keyof typeof foodGuideData.proteins]) {
+    } else if (category === 'proteins' && foodGuideData.categories?.proteins?.foods?.[foodKey as keyof typeof foodGuideData.categories.proteins.foods]) {
+      const proteinData = foodGuideData.categories.proteins.foods[foodKey as keyof typeof foodGuideData.categories.proteins.foods];
       foodData = {
-        name: foodName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        ...foodGuideData.proteins[foodName as keyof typeof foodGuideData.proteins]
+        name: proteinData.name || foodKey.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+        summary: proteinData.learning?.summary || '',
+        key_facts: proteinData.learning?.key_facts || [],
+        key: foodKey,
       };
     }
     
     if (foodData) {
+       console.log('FoodLearn - foodData found:', foodData);
        setSelectedFoodData(foodData);
        setShowLearnFoods(true);
+     } else {
+       console.log('FoodLearn - No foodData found for:', { foodKey, category });
      }
   };
 
@@ -170,45 +207,49 @@ const FoodLearn = () => {
           </ScrollView>
         </View>
 
-        <ScrollView style={styles.foodList} showsVerticalScrollIndicator={false}>
-          {filteredFoods.map((food) => (
-            <TouchableOpacity
-              key={food.name}
-              style={styles.foodItem}
-              onPress={() => handleFoodPress(food.name, food.category)}
-              activeOpacity={0.7}
-            >
-              <Image source={getFoodImage(food.name)} style={styles.foodImage} />
-              <View style={styles.foodInfo}>
-                <Text style={styles.foodName}>
-                  {food.name.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#666" />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View
+          onLayout={(e) => {
+            const availableWidth = e.nativeEvent.layout.width;
+            const nextColumns = Math.max(1, Math.floor((availableWidth + GUTTER) / (MIN_ITEM_WIDTH + GUTTER)));
+            const computedItemWidth = Math.floor((availableWidth - (nextColumns - 1) * GUTTER) / nextColumns);
+            setNumColumns(nextColumns);
+            setItemCardWidth(computedItemWidth);
+          }}
+        >
+          <FlatList
+            data={filteredFoods}
+            keyExtractor={(food) => food.name}
+            key={`cols-${numColumns}`}
+            numColumns={numColumns}
+            columnWrapperStyle={numColumns > 1 ? { justifyContent: 'space-between', marginBottom: GUTTER } : undefined}
+            contentContainerStyle={numColumns === 1 ? { rowGap: GUTTER } : undefined}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item: food }) => (
+              <TouchableOpacity
+                style={[styles.foodItem, { width: itemCardWidth }]}
+                onPress={() => handleFoodPress(food.key, food.category)}
+                activeOpacity={0.7}
+              >
+                <Image source={getFoodImage(food.key)} style={styles.foodImage} />
+                <View style={styles.foodInfo}>
+                  <Text style={styles.foodName}>
+                    {food.name.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
       </View>
       
        {showLearnFoods && selectedFoodData && (
         <View style={styles.overlay}>
           <LearnFoods
-            imageSource={getFoodImage(selectedFoodData.name)}
+            imageSource={getFoodImage(selectedFoodData.key || selectedFoodData.name)}
             data={{
-              description: selectedFoodData.description,
-              nutrition_per_medium: {
-                carbohydrates: selectedFoodData.nutrition_per_medium?.carbohydrates || selectedFoodData.nutrition_per_cup?.carbohydrates || 'N/A',
-                protein: selectedFoodData.nutrition_per_medium?.protein || selectedFoodData.nutrition_per_cup?.protein || selectedFoodData.nutrition_per_3oz?.protein || selectedFoodData.nutrition_per_large_egg?.protein || 'N/A',
-                fat: selectedFoodData.nutrition_per_medium?.fat || selectedFoodData.nutrition_per_cup?.fat || selectedFoodData.nutrition_per_3oz?.fat || selectedFoodData.nutrition_per_large_egg?.fat || 'N/A',
-              },
-              nutrient_sources: {
-                carbohydrates: selectedFoodData.nutrient_sources?.carbohydrates || 'N/A',
-                protein: selectedFoodData.nutrient_sources?.protein || 'N/A',
-                fat: selectedFoodData.nutrient_sources?.fat || 'N/A',
-              },
-              how_grown: selectedFoodData.how_grown || selectedFoodData.how_produced || ['Information not available'],
-              how_to_eat: selectedFoodData.how_to_eat || ['Information not available'],
-            }}
+              summary: selectedFoodData.summary,
+              key_facts: selectedFoodData.key_facts,
+            } as any}
             onBack={() => setShowLearnFoods(false)}
           />
         </View>
@@ -280,35 +321,39 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   foodList: {
-    flex: 1,
+    flexDirection: 'column',
   },
   foodItem: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#F8F8F8',
     borderRadius: 15,
+    height: 120,
     padding: 15,
-    marginBottom: 10,
+    marginRight: 0,
   },
   foodImage: {
+    marginTop: 10,
     width: 45,
     height: 45,
     borderRadius: 10,
-    marginRight: 15,
+    alignItems: 'center',
   },
   foodInfo: {
     flex: 1,
+    alignItems: 'center',
   },
   foodName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
   },
   foodDescription: {
     fontSize: 14,
     color: '#666',
     lineHeight: 18,
+    textAlign: 'center',
   },
   overlay: {
     position: 'absolute',

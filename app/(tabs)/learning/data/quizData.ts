@@ -27,22 +27,22 @@ const generateQuestionsFromFoods = (): Question[] => {
   };
 
   // Process fruits
-  if (foodsData.fruits) {
-    Object.entries(foodsData.fruits).forEach(([key, data]) => {
+  if (foodsData.categories?.fruits?.foods) {
+    Object.entries(foodsData.categories.fruits.foods).forEach(([key, data]) => {
       createQuestionsForFood(key, data, 'Fruits');
     });
   }
 
   // Process vegetables
-  if (foodsData.vegetables) {
-    Object.entries(foodsData.vegetables).forEach(([key, data]) => {
+  if (foodsData.categories?.vegetables?.foods) {
+    Object.entries(foodsData.categories.vegetables.foods).forEach(([key, data]) => {
       createQuestionsForFood(key, data, 'Vegetables');
     });
   }
 
   // Process proteins
-  if (foodsData.proteins) {
-    Object.entries(foodsData.proteins).forEach(([key, data]) => {
+  if (foodsData.categories?.proteins?.foods) {
+    Object.entries(foodsData.categories.proteins.foods).forEach(([key, data]) => {
       createQuestionsForFood(key, data, 'Proteins');
     });
   }

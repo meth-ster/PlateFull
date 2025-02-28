@@ -60,6 +60,7 @@ interface FoodItem {
   how_to_eat?: string[];
   quiz?: any;
   videoUrl?: string;
+  key_facts?: string[];
 }
 
 interface VideoData {
@@ -146,7 +147,7 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
     const videos: VideoData[] = [];
     
     // Fruits video
-    const fruits = Object.keys(foodGuideData.fruits).slice(0, 5);
+    const fruits = foodGuideData.categories?.fruits?.foods ? Object.keys(foodGuideData.categories.fruits.foods).slice(0, 5) : [];
     videos.push({
       id: "fruits",
       title: "Fruits & Berries",
@@ -161,7 +162,7 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
     });
 
     // Vegetables video
-    const vegetables = Object.keys(foodGuideData.vegetables).slice(0, 5);
+    const vegetables = foodGuideData.categories?.vegetables?.foods ? Object.keys(foodGuideData.categories.vegetables.foods).slice(0, 5) : [];
     videos.push({
       id: "vegetables",
       title: "Veggie Power",
@@ -176,7 +177,7 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
     });
 
     // Proteins video
-    const proteins = Object.keys(foodGuideData.proteins).slice(0, 5);
+    const proteins = foodGuideData.categories?.proteins?.foods ? Object.keys(foodGuideData.categories.proteins.foods).slice(0, 5) : [];
     videos.push({
       id: "proteins",
       title: "Protein Power",
@@ -214,53 +215,62 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
     const foods: FoodItem[] = [];
     
     // Add fruits
-    Object.keys(foodGuideData.fruits).forEach(fruitName => {
-      const fruitData = foodGuideData.fruits[fruitName as keyof typeof foodGuideData.fruits];
-      foods.push({
-        id: fruitName,
-        name: fruitName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        category: 'fruits',
-        description: fruitData.description,
-        image: fruitData.image,
-        nutrition: (fruitData as any).nutrition_per_medium || (fruitData as any).nutrition_per_cup,
-        how_grown: (fruitData as any).how_grown,
-        how_to_eat: (fruitData as any).how_to_eat,
-        quiz: (fruitData as any).quiz,
+    if (foodGuideData.categories?.fruits?.foods) {
+      Object.keys(foodGuideData.categories.fruits.foods).forEach(fruitName => {
+        const fruitData = foodGuideData.categories.fruits.foods[fruitName as keyof typeof foodGuideData.categories.fruits.foods];
+        foods.push({
+          id: fruitName,
+          name: fruitData.name || fruitName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+          category: 'fruits',
+          description: fruitData.learning?.summary || '',
+          image: '',
+          nutrition: (fruitData as any).nutrition_per_medium || (fruitData as any).nutrition_per_cup,
+          how_grown: (fruitData as any).how_grown,
+          how_to_eat: (fruitData as any).how_to_eat,
+          quiz: fruitData.quiz,
+          key_facts: fruitData.learning?.key_facts || [],
+        });
       });
-    });
+    }
 
     // Add vegetables
-    Object.keys(foodGuideData.vegetables).forEach(vegName => {
-      const vegData = foodGuideData.vegetables[vegName as keyof typeof foodGuideData.vegetables];
-      foods.push({
-        id: vegName,
-        name: vegName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        category: 'vegetables',
-        description: vegData.description,
-        image: vegData.image,
-        nutrition: (vegData as any).nutrition_per_medium || (vegData as any).nutrition_per_cup,
-        how_grown: (vegData as any).how_grown,
-        how_to_eat: (vegData as any).how_to_eat,
-        quiz: (vegData as any).quiz,
+    if (foodGuideData.categories?.vegetables?.foods) {
+      Object.keys(foodGuideData.categories.vegetables.foods).forEach(vegName => {
+        const vegData = foodGuideData.categories.vegetables.foods[vegName as keyof typeof foodGuideData.categories.vegetables.foods];
+        foods.push({
+          id: vegName,
+          name: vegData.name || vegName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+          category: 'vegetables',
+          description: vegData.learning?.summary || '',
+          image: '',
+          nutrition: (vegData as any).nutrition_per_medium || (vegData as any).nutrition_per_cup,
+          how_grown: (vegData as any).how_grown,
+          how_to_eat: (vegData as any).how_to_eat,
+          quiz: vegData.quiz,
+          key_facts: vegData.learning?.key_facts || [],
+        });
       });
-    });
+    }
 
     // Add proteins
-    Object.keys(foodGuideData.proteins).forEach(proteinName => {
-      const proteinData = foodGuideData.proteins[proteinName as keyof typeof foodGuideData.proteins];
-      foods.push({
-        id: proteinName,
-        name: proteinName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        category: 'proteins',
-        description: proteinData.description,
-        image: proteinData.image,
-        nutrition: (proteinData as any).nutrition_per_3oz || (proteinData as any).nutrition_per_cup || (proteinData as any).nutrition_per_large_egg || (proteinData as any).nutrition_per_ounce,
-        how_grown: undefined,
-        how_produced: (proteinData as any).how_produced,
-        how_to_eat: (proteinData as any).how_to_eat,
-        quiz: (proteinData as any).quiz,
+    if (foodGuideData.categories?.proteins?.foods) {
+      Object.keys(foodGuideData.categories.proteins.foods).forEach(proteinName => {
+        const proteinData = foodGuideData.categories.proteins.foods[proteinName as keyof typeof foodGuideData.categories.proteins.foods];
+        foods.push({
+          id: proteinName,
+          name: proteinData.name || proteinName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+          category: 'proteins',
+          description: proteinData.learning?.summary || '',
+          image: '',
+          nutrition: (proteinData as any).nutrition_per_3oz || (proteinData as any).nutrition_per_cup || (proteinData as any).nutrition_per_large_egg || (proteinData as any).nutrition_per_ounce,
+          how_grown: undefined,
+          how_produced: (proteinData as any).how_produced,
+          how_to_eat: (proteinData as any).how_to_eat,
+          quiz: proteinData.quiz,
+          key_facts: proteinData.learning?.key_facts || [],
+        });
       });
-    });
+    }
 
     return foods;
   };
@@ -400,6 +410,16 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
             <Text style={styles.foodDetailName}>{selectedFood.name}</Text>
             <Text style={styles.foodDetailDescription}>{selectedFood.description}</Text>
             
+            {/* Key Facts Section */}
+            {selectedFood.key_facts && selectedFood.key_facts.length > 0 && (
+              <View style={styles.keyFactsSection}>
+                <Text style={styles.sectionHeader}>Key Facts</Text>
+                {selectedFood.key_facts.map((fact, index) => (
+                  <Text key={index} style={styles.keyFactText}>• {fact}</Text>
+                ))}
+              </View>
+            )}
+            
             {selectedFood.nutrition && (
               <View style={styles.nutritionSection}>
                 <Text style={styles.sectionHeader}>Nutrition Facts</Text>
@@ -459,55 +479,6 @@ const LearningModuleTab: React.FC<LearningModuleTabProps> = ({ navigation }) => 
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
-      <Animated.View entering={FadeInUp.delay(100)}>
-        <Text style={styles.sectionTitle}>Learning Hub</Text>
-        <Text style={styles.sectionSubtitle}>
-          Discover, Learn, and Master Food Knowledge! 🍎🥦
-        </Text>
-      </Animated.View>
-
-      <View style={styles.modulesGrid}>
-        {modules.map((m, i) => (
-          <Animated.View
-            key={m.id}
-            entering={FadeInUp.delay(i * 150).springify()}
-            style={styles.moduleCardContainer}
-          >
-            <TouchableOpacity
-              style={[styles.moduleCard, !m.isUnlocked && styles.lockedModuleCard]}
-              onPress={() => handleModulePress(m)}
-            >
-              <Image source={m.icon} style={styles.moduleEmoji} />
-              <Text style={[styles.moduleTitle, !m.isUnlocked && styles.lockedText]}>
-                {m.title}
-              </Text>
-              <Text
-                style={[
-                  styles.moduleDescription,
-                  !m.isUnlocked && styles.lockedText,
-                ]}
-              >
-                {m.description}
-              </Text>
-              {m.progress !== undefined && m.isUnlocked && (
-                <View style={styles.progressBar}>
-                  <View
-                    style={{
-                      height: "100%",
-                      width: `${m.progress}%`,
-                      backgroundColor: m.color,
-                    }}
-                  />
-                </View>
-              )}
-              <Button
-                title={m.isUnlocked ? m.action : "Locked"}
-                onPress={() => handleModulePress(m)}
-              />
-            </TouchableOpacity>
-          </Animated.View>
-        ))}
-      </View>
 
       <Animated.View entering={FadeInUp.delay(300)}>
         <Text style={styles.sectionTitle}>Learning Videos</Text>
@@ -897,6 +868,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
     color: "#666",
+  },
+  keyFactsSection: {
+    backgroundColor: "#F8F8F8",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  keyFactText: {
+    fontSize: 16,
+    marginBottom: 8,
+    color: "#555",
+    lineHeight: 22,
   },
   nutritionSection: {
     backgroundColor: "#F8F8F8",
